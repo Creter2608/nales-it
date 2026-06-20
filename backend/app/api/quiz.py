@@ -81,7 +81,7 @@ async def grade_quiz(request: GradeRequest):
         feedback = "Chưa cấu hình API Key nên không thể tạo nhận xét."
     else:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-flash-latest", 
+            model="gemini-2.5-pro", 
             google_api_key=settings.GEMINI_API_KEY,
             temperature=0.7,
         )
