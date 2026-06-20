@@ -49,5 +49,12 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
   - Các câu hỏi bằng ngôn ngữ khác nhau được người dùng upload lên sẽ được lưu dưới dạng các **`Variants` (Biến thể ngôn ngữ)** gắn vào Entity đó.
   - Khi hiển thị, học sinh Tây Ban Nha sẽ đọc đúng văn bản gốc do người Tây Ban Nha upload (không bị dịch máy lủng củng). Core logic giải bài sẽ được LLM (có hiểu biết ngữ cảnh chuyên ngành) chuyển ngữ mượt mà sang ngôn ngữ đích chỉ trong 1 tích tắc.
 
+### 11. Hàng đợi thông minh & Khử trùng lặp Tức thời (Request Deduplication & Queueing)
+- **Vấn đề**: Trong các mùa thi cao điểm, có thể có 50 học sinh cùng một lớp tải lên chung một file "Đề Thi Giữa Kỳ Toán.pdf" vào cùng một thời điểm (ví dụ lúc 8h00 tối). Nếu đẩy cả 50 request này lên API Gemini thì sẽ gây lãng phí khổng lồ và dễ dính lỗi `429 Too Many Requests`.
+- **Giải pháp**: Xây dựng cơ chế **Request Deduplication Queue**. 
+  - Khi nhận file, hệ thống sẽ tính mã băm (Hash - MD5/SHA256) của nội dung file PDF.
+  - Nếu file đó đang được AI giải rồi (trạng thái `Processing`), 49 học sinh đăng sau sẽ được đưa vào một Hàng đợi (Queue/PubSub) để "chờ ké" kết quả.
+  - Ngay khi AI giải xong cho người đầu tiên, kết quả sẽ được Broadcast (Phát sóng) trả về ngay lập tức cho 49 người còn lại mà không tốn thêm bất kỳ một đồng tiền Token nào!
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
