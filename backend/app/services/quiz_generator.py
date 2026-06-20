@@ -23,8 +23,11 @@ async def generate_quiz_from_text(text: str) -> Quiz:
     prompt = PromptTemplate(
         input_variables=["text"],
         template="""
-Bạn là một chuyên gia giáo dục. Hãy đọc văn bản tài liệu sau và trích xuất thành một bài trắc nghiệm (Quiz).
-Trả về KẾT QUẢ ĐẦU RA hoàn toàn dưới dạng JSON hợp lệ tuân thủ chặt chẽ cấu trúc sau, không kèm theo bất kỳ văn bản giải thích nào khác.
+Bạn là một chuyên gia giáo dục. Hãy đọc văn bản tài liệu sau và tạo ra một bài trắc nghiệm (Quiz).
+LƯU Ý QUAN TRỌNG VỀ ĐÁP ÁN:
+- Nếu trong tài liệu ĐÃ CÓ SẴN đáp án (được khoanh, gạch chân, hoặc có bảng đáp án ở cuối), hãy trích xuất chính xác đáp án đó.
+- Nếu tài liệu CHỈ CÓ CÂU HỎI mà KHÔNG CÓ ĐÁP ÁN, bạn hãy đóng vai trò là một giáo viên xuất sắc, tự phân tích, tự giải quyết câu hỏi đó để tìm ra đáp án đúng và viết lời giải thích chi tiết.
+Trả về KẾT QUẢ ĐẦU RA hoàn toàn dưới dạng JSON hợp lệ tuân thủ chặt chẽ cấu trúc sau, không kèm theo bất kỳ văn bản giải thích nào khác bên ngoài JSON.
         
 Cấu trúc JSON mong đợi:
 {{
