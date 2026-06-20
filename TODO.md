@@ -25,5 +25,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng nâng cao**: Khi người dùng A upload một đề và AI đã giải xong, câu hỏi cùng lời giải đó sẽ được lưu vào một thư viện chung (Question Bank / Vector DB) thông qua thuật toán băm (Hashing) hoặc nhúng vector (Embeddings).
 - **Lợi ích**: Khi người dùng B upload một đề khác nhưng có chứa câu hỏi trùng lặp (hoặc giống 95% do sai số nhận diện OCR), hệ thống sẽ đối chiếu và lấy thẳng lời giải từ thư viện ra thay vì gọi API Gemini. Tối ưu hóa cực kỳ mạnh mẽ chi phí Token và đẩy tốc độ tạo đề đạt mức "tức thời" (0 giây) đối với các câu hỏi phổ biến.
 
+### 6. Tính năng Tra cứu Câu hỏi (Global Search / Diễn đàn Mini)
+- **Ý tưởng**: Dựa trên "Ngân hàng Câu hỏi" đã xây dựng ở mục 5, chúng ta sẽ làm một thanh công cụ Search (Tìm kiếm). Học sinh không cần phải upload nguyên cái đề, mà chỉ cần gõ nội dung câu hỏi (hoặc chụp ảnh câu hỏi) lên thanh tìm kiếm.
+- **Cách thức hoạt động**: Hệ thống sẽ truy vấn vào Vector DB (Semantic Search) để tìm ra các câu hỏi tương tự nhất đã được AI giải trước đó. Hoạt động giống hệt chức năng tìm kiếm của một diễn đàn học tập cộng đồng (như Hocmai, VietJack,...), giúp học sinh tham khảo cách giải ngay lập tức.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
