@@ -10,7 +10,7 @@ final dioProvider = Provider((ref) {
       // Nếu chạy trên Web -> gọi localhost. Nếu chạy trên Android ảo -> gọi 10.0.2.2
       baseUrl: kIsWeb ? 'http://localhost:8000' : 'http://10.0.2.2:8000',
       connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 120),
+      receiveTimeout: const Duration(minutes: 5),
     ),
   );
 
