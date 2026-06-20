@@ -63,5 +63,12 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
   - Gửi song song (Concurrent) nhiều request đến `gemini-flash` để bóc tách từng cụm trang đó thành các mảng JSON nhỏ.
   - Sau đó Backend sẽ làm nhiệm vụ "Gộp" (Merge) các mảng JSON này lại thành một JSON tổng duy nhất. Cách này vừa lách được Token Limit, vừa tăng tốc độ xử lý nhờ chạy song song!
 
+### 13. Hệ thống Tài khoản & Gói cước (Auth & Monetization)
+- **Ý tưởng**: Xây dựng mô hình kinh doanh cho ứng dụng với hệ thống Người dùng Miễn phí (Free) và Trả phí (Premium/Pro).
+- **Cách thức hoạt động**:
+  - **Auth**: Tích hợp đăng nhập bằng Google/Apple (OAuth2) để quá trình Onboarding siêu nhanh gọn.
+  - **Tier 1 (Free Users)**: Được quyền tìm kiếm câu hỏi trong Diễn đàn/Ngân hàng đề miễn phí. Nếu upload đề mới, chỉ được giải 10 câu đầu, hoặc bị giới hạn số lượng câu hỏi giải bằng AI trong ngày (Daily Quota).
+  - **Tier 2 (Premium Users)**: Trả phí hàng tháng. Được cấp quyền truy cập tính năng "Ôn thi Cấp tốc cùng Nales", không giới hạn độ dài đề thi tải lên, và được quyền dùng nút 🚩 (Re-solve) để yêu cầu Gia sư AI giải chi tiết Step-by-step.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
