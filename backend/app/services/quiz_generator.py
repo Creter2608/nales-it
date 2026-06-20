@@ -68,9 +68,9 @@ async def solve_quiz_questions(unsolved_questions: List[Dict[str, Any]]) -> List
     if not unsolved_questions:
         return []
         
-    logger.info(f"Giải {len(unsolved_questions)} câu hỏi bằng gemini-3.1-pro-preview...")
+    logger.info(f"Giải {len(unsolved_questions)} câu hỏi bằng gemini-2.5-pro...")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.1-pro-preview", 
+        model="gemini-2.5-pro", 
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.2,
     )
@@ -104,7 +104,7 @@ Cấu trúc JSON đầu ra mong đợi:
 async def resolve_single_question(question_content: str, answers: list, old_answer_id: str, old_explanation: str) -> dict:
     """Giải lại 1 câu hỏi theo yêu cầu của học sinh (Re-solve)."""
     llm = ChatGoogleGenerativeAI(
-        model="gemini-3.1-pro-preview", 
+        model="gemini-2.5-pro", 
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.4, # Nhiệt độ cao hơn để tư duy lại linh hoạt hơn
     )
