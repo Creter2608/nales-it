@@ -41,9 +41,13 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng**: Tính năng giao tiếp trực tiếp với linh vật Nales để thiết kế đề ôn tập theo yêu cầu chủ đề cụ thể.
 - **Cách thức hoạt động**: Thay vì tự tải đề lên, học sinh chỉ cần chat/yêu cầu Nales: *"Hãy giúp mình ôn cấp tốc môn Database"*. Hệ thống sẽ ngay lập tức truy vấn vào **Ngân hàng Câu hỏi** để tổng hợp ra một bộ đề bao quát toàn bộ các mảng kiến thức cốt lõi nhất của môn Database. Giúp học sinh ôn thi "nước rút" ngay trước giờ G một cách hiệu quả nhất.
 
-### 10. Chống trùng lặp Đa ngôn ngữ (Cross-lingual Deduplication)
-- **Vấn đề**: Ứng dụng định hướng quốc tế, cùng một bài toán (ví dụ Toán học) nhưng người dùng upload bằng tiếng Anh, tiếng Việt, hoặc tiếng Tây Ban Nha. Việc lưu trữ nhiều bản dịch của cùng một câu hỏi gây lãng phí dung lượng Database và tốn kém phí xử lý AI.
-- **Giải pháp**: Sử dụng **Cross-lingual Text Embeddings** (Nhúng vector đa ngôn ngữ). Hệ thống sẽ chuyển hóa ý nghĩa (Semantic) của câu hỏi thành Vector toán học chung độc lập với ngôn ngữ. Khi đó, câu hỏi tiếng Anh và tiếng Việt sẽ có chung một Vector. Hệ thống chỉ cần lưu 1 bản gốc (hoặc 1 Vector trung tâm), và dùng AI dịch thuật Real-time (hoặc lưu các bản dịch nhẹ đính kèm) khi trả kết quả cho người dùng ở các quốc gia khác nhau.
+### 10. Chống trùng lặp Đa ngôn ngữ (Cross-lingual Deduplication) & Entity-Variant Architecture
+- **Vấn đề**: Ứng dụng định hướng quốc tế, cùng một bài toán (ví dụ Toán học) nhưng người dùng upload bằng tiếng Anh, tiếng Việt, hoặc Tây Ban Nha. Việc gọi AI giải lại từ đầu cùng một bài toán gây lãng phí Token. Ngược lại, nếu chỉ lưu 1 bản gốc (VD: Tiếng Anh) rồi dùng công cụ dịch tự động (như Google Translate) để hiển thị thì sẽ gây ra lỗi dịch thuật lủng củng đối với các thuật ngữ chuyên ngành.
+- **Giải pháp (Kiến trúc Entity - Variant)**: 
+  - Sử dụng **Cross-lingual Text Embeddings** để phát hiện ra câu tiếng Việt và câu tiếng Anh thực chất là *cùng một bài toán cốt lõi*.
+  - Hệ thống sẽ tạo ra 1 `Entity` (Thực thể cốt lõi) chứa **cách giải logic (Toán học/Vật lý)** do AI giải 1 lần duy nhất.
+  - Các câu hỏi bằng ngôn ngữ khác nhau được người dùng upload lên sẽ được lưu dưới dạng các **`Variants` (Biến thể ngôn ngữ)** gắn vào Entity đó.
+  - Khi hiển thị, học sinh Tây Ban Nha sẽ đọc đúng văn bản gốc do người Tây Ban Nha upload (không bị dịch máy lủng củng). Core logic giải bài sẽ được LLM (có hiểu biết ngữ cảnh chuyên ngành) chuyển ngữ mượt mà sang ngôn ngữ đích chỉ trong 1 tích tắc.
 
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
