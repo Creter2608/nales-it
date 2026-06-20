@@ -21,5 +21,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 ### 4. Cải thiện UI (Real-time Feedback)
 - Thay vì Mobile hiện một vòng xoay Loading nhàm chán suốt 1 phút, Backend có thể trả về tiến trình (Server-Sent Events / WebSocket) để Mobile hiển thị: *"Đang phân tích trang 1/10...", "Đang phân tích trang 5/10..."*. Tạo cảm giác nhanh và an tâm cho người dùng.
 
+### 5. Xây dựng "Ngân hàng Câu hỏi" (Global Question Bank / AI Caching)
+- **Ý tưởng nâng cao**: Khi người dùng A upload một đề và AI đã giải xong, câu hỏi cùng lời giải đó sẽ được lưu vào một thư viện chung (Question Bank / Vector DB) thông qua thuật toán băm (Hashing) hoặc nhúng vector (Embeddings).
+- **Lợi ích**: Khi người dùng B upload một đề khác nhưng có chứa câu hỏi trùng lặp (hoặc giống 95% do sai số nhận diện OCR), hệ thống sẽ đối chiếu và lấy thẳng lời giải từ thư viện ra thay vì gọi API Gemini. Tối ưu hóa cực kỳ mạnh mẽ chi phí Token và đẩy tốc độ tạo đề đạt mức "tức thời" (0 giây) đối với các câu hỏi phổ biến.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
