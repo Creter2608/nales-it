@@ -16,15 +16,23 @@ async def upload_pdf(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="Hiện tại hệ thống chỉ hỗ trợ xử lý file PDF.")
     
     try:
+        logger.info(f"Đã nhận yêu cầu tải lên file: {file.filename}")
+        
         # Bước 1: Trích xuất text từ PDF
+        logger.info("Đang bóc tách văn bản từ PDF...")
         text = await extract_text_from_pdf(file)
         
         if not text:
+            logger.warning(f"File {file.filename} không chứa văn bản hợp lệ.")
             raise HTTPException(status_code=400, detail="File PDF trống hoặc không tìm thấy nội dung văn bản.")
             
+        logger.info(f"Bóc tách thành công! Tổng số ký tự tìm thấy: {len(text)}")
+            
         # Bước 2: Gọi Gemini AI để biến đổi text thành Quiz
+        logger.info("Bắt đầu gửi văn bản cho Gemini AI xử lý... Quá trình này có thể mất thời gian.")
         quiz = await generate_quiz_from_text(text)
         
+        logger.info(f"Tạo Quiz thành công! Tiêu đề: '{quiz.title}' với {len(quiz.questions)} câu hỏi.")
         return quiz
     except ValueError as ve:
         raise HTTPException(status_code=422, detail=str(ve))
