@@ -5,8 +5,7 @@ from app.services.pdf_extractor import extract_text_from_pdf
 from app.services.quiz_generator import generate_quiz_from_text, solve_quiz_questions
 
 logger = logging.getLogger(__name__)
-upload_router = APIRouter()
-# Gán upload_router = router để tương thích ngược với code cũ import router
+upload_router = APIRouter(prefix="/upload", tags=["upload"])
 router = upload_router
 
 async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):

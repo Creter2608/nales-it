@@ -5,7 +5,7 @@ from app.db.mongodb import get_database
 from app.schemas.quiz import Quiz
 
 logger = logging.getLogger(__name__)
-quiz_router = APIRouter()
+quiz_router = APIRouter(prefix="/quiz", tags=["quiz"])
 
 MOCK_QUIZ_DB = {} # Dictionary lưu trữ tạm thời nếu MongoDB không hoạt động
 
