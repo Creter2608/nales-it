@@ -20,7 +20,7 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Nales-It',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
         useMaterial3: true,
       ),
       routerConfig: router,
