@@ -56,5 +56,12 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
   - Nếu file đó đang được AI giải rồi (trạng thái `Processing`), 49 học sinh đăng sau sẽ được đưa vào một Hàng đợi (Queue/PubSub) để "chờ ké" kết quả.
   - Ngay khi AI giải xong cho người đầu tiên, kết quả sẽ được Broadcast (Phát sóng) trả về ngay lập tức cho 49 người còn lại mà không tốn thêm bất kỳ một đồng tiền Token nào!
 
+### 12. Chống ngợp Token ở khâu Bóc tách (Extraction Chunking & Pagination)
+- **Vấn đề**: Mặc dù khâu "Giải đề" đã được băm nhỏ thành các cụm 5 câu, nhưng khâu "Bóc tách cấu trúc ban đầu" (Dùng `gemini-flash`) vẫn đang phải nạp TOÀN BỘ văn bản PDF vào cùng 1 lúc. Nếu đề thi dài 50 trang (ví dụ đề IELTS, TOEIC), số lượng Token đầu vào (Input) và độ dài file JSON trả về (Output) chắc chắn sẽ vượt ngưỡng giới hạn vật lý của Google Gemini (thường là 8192 output tokens), làm cháy Quota hoặc đứt gãy file JSON.
+- **Giải pháp**: Xử lý băm nhỏ ngay từ lúc đọc PDF (Pagination).
+  - Tách PDF thành từng cụm trang (Ví dụ: 3 trang / 1 chunk).
+  - Gửi song song (Concurrent) nhiều request đến `gemini-flash` để bóc tách từng cụm trang đó thành các mảng JSON nhỏ.
+  - Sau đó Backend sẽ làm nhiệm vụ "Gộp" (Merge) các mảng JSON này lại thành một JSON tổng duy nhất. Cách này vừa lách được Token Limit, vừa tăng tốc độ xử lý nhờ chạy song song!
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
