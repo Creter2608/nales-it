@@ -68,9 +68,9 @@ async def _solve_quiz_questions(unsolved_questions: List[Dict[str, Any]]) -> Lis
     if not unsolved_questions:
         return []
         
-    logger.info(f"Bước 2: Giải {len(unsolved_questions)} câu hỏi bằng gemini-2.5-pro...")
+    logger.info(f"Bước 2: Giải {len(unsolved_questions)} câu hỏi bằng gemini-3.1-pro-preview...")
     llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-pro", 
+        model="gemini-3.1-pro-preview", 
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.2,
     )
