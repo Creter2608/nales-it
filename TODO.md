@@ -33,5 +33,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng**: Thu thập dữ liệu lịch sử làm bài (Quiz History) của từng học sinh. AI sẽ tổng hợp và phân tích xem học sinh đó thường trả lời sai ở dạng bài nào, chuyên đề nào.
 - **Cách thức hoạt động**: Từ bảng đánh giá điểm yếu (Knowledge Gaps), hệ thống sẽ chủ động "nhặt" các câu hỏi từ **Ngân hàng Câu hỏi (Question Bank)** để tạo ra một "Đề thi Ôn tập (Tailored Quiz)" dành riêng cho học sinh đó. Tính năng này giống như một Gia sư cá nhân thực thụ theo dõi sát sao sự tiến bộ của học sinh.
 
+### 8. Linh vật AI "Nales" & Catchphrase
+- **Ý tưởng**: Xây dựng nhận diện thương hiệu (Branding) với linh vật là một trợ lý AI mang tên **Nales**.
+- **Cách thức hoạt động**: Khi học sinh làm đúng một câu hỏi khó hoặc đạt điểm xuất sắc trong bài thi, một Popup/Animation của Nales sẽ xuất hiện với câu thoại đặc trưng: **"Nales It!"** (Chơi chữ của từ "Nailed It!" - Làm tốt lắm/Đỉnh quá!). Giúp tạo động lực, sự thân thiện và yếu tố Gamification cho ứng dụng.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
