@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Tuple
 from langchain_core.prompts import PromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 from app.core.config import settings
@@ -63,12 +63,12 @@ Văn bản tài liệu:
     response = await chain.ainvoke({"text": text})
     return _parse_json_from_text(response.content)
 
-async def _solve_quiz_questions(unsolved_questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Bước 2: Sử dụng Pro để giải các câu hỏi chưa có đáp án."""
+async def solve_quiz_questions(unsolved_questions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Giải một danh sách các câu hỏi chưa có đáp án bằng Pro."""
     if not unsolved_questions:
         return []
         
-    logger.info(f"Bước 2: Giải {len(unsolved_questions)} câu hỏi bằng gemini-3.1-pro-preview...")
+    logger.info(f"Giải {len(unsolved_questions)} câu hỏi bằng gemini-3.1-pro-preview...")
     llm = ChatGoogleGenerativeAI(
         model="gemini-3.1-pro-preview", 
         google_api_key=settings.GEMINI_API_KEY,
@@ -101,20 +101,54 @@ Cấu trúc JSON đầu ra mong đợi:
     response = await chain.ainvoke({"questions_json": input_json})
     return _parse_json_from_text(response.content)
 
-async def generate_quiz_from_text(text: str) -> Quiz:
+async def resolve_single_question(question_content: str, answers: list, old_answer_id: str, old_explanation: str) -> dict:
+    """Giải lại 1 câu hỏi theo yêu cầu của học sinh (Re-solve)."""
+    llm = ChatGoogleGenerativeAI(
+        model="gemini-3.1-pro-preview", 
+        google_api_key=settings.GEMINI_API_KEY,
+        temperature=0.4, # Nhiệt độ cao hơn để tư duy lại linh hoạt hơn
+    )
+    
+    prompt = PromptTemplate(
+        input_variables=["q_content", "q_answers", "old_ans", "old_exp"],
+        template="""
+Học sinh báo cáo rằng câu hỏi sau đây AI giải "cấn cấn" và có thể bị sai.
+Bạn hãy đóng vai trò là một Gia sư siêu cấp, cực kỳ cẩn thận kiểm tra lại TỪNG BƯỚC MỘT (Step-by-step).
+
+Câu hỏi: {q_content}
+Các đáp án: {q_answers}
+Đáp án cũ AI chọn: {old_ans}
+Giải thích cũ: {old_exp}
+
+Hãy suy luận lại thật chính xác. Cuối cùng trả về JSON duy nhất:
+{{
+    "correct_answer_id": "A",
+    "explanation": "Lời giải thích mới chi tiết, logic và thuyết phục hơn, chỉ ra chỗ sai của lời giải cũ (nếu có)..."
+}}
+"""
+    )
+    chain = prompt | llm
+    response = await chain.ainvoke({
+        "q_content": question_content,
+        "q_answers": json.dumps(answers, ensure_ascii=False),
+        "old_ans": old_answer_id,
+        "old_exp": old_explanation
+    })
+    return _parse_json_from_text(response.content)
+
+async def generate_quiz_from_text(text: str) -> Tuple[Quiz, List[Dict[str, Any]]]:
     """
-    Hệ thống AI 2 Bước:
-    Bước 1: Dùng Flash để trích xuất cấu trúc.
-    Bước 2: Dùng Pro để giải đề (nếu cần).
+    Hệ thống AI 2 Bước (Lazy Loading):
+    - Trích xuất toàn bộ.
+    - Lấy 5 câu đầu giải đồng bộ.
+    - Trả về Quiz và danh sách các câu CÒN LẠI cần giải ngầm.
     """
     if not settings.GEMINI_API_KEY:
         raise ValueError("GEMINI_API_KEY chưa được cấu hình!")
         
     try:
-        # Nhịp 1: Trích xuất cấu trúc
         quiz_data = await _extract_quiz_structure(text)
         
-        # Lọc ra các câu chưa có đáp án
         unsolved = []
         for q in quiz_data.get("questions", []):
             if not q.get("correct_answer_id"):
@@ -124,10 +158,12 @@ async def generate_quiz_from_text(text: str) -> Quiz:
                     "answers": q.get("answers")
                 })
                 
-        # Nhịp 2: Giải đề (nếu cần)
-        if unsolved:
-            solved_results = await _solve_quiz_questions(unsolved)
-            # Map kết quả giải về lại quiz_data
+        # Lấy 5 câu đầu để giải ngay lập tức (Synchronous)
+        sync_batch = unsolved[:5]
+        remaining_unsolved = unsolved[5:]
+        
+        if sync_batch:
+            solved_results = await solve_quiz_questions(sync_batch)
             solved_map = {str(item["id"]): item for item in solved_results}
             for q in quiz_data["questions"]:
                 sid = str(q.get("id"))
@@ -135,7 +171,7 @@ async def generate_quiz_from_text(text: str) -> Quiz:
                     q["correct_answer_id"] = solved_map[sid].get("correct_answer_id")
                     q["explanation"] = solved_map[sid].get("explanation")
                     
-        return Quiz(**quiz_data)
+        return Quiz(**quiz_data), remaining_unsolved
         
     except Exception as e:
         logger.error(f"Lỗi trong quá trình tạo Quiz 2 bước: {e}")

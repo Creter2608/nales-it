@@ -77,6 +77,45 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     );
   }
 
+  void _showResolveDialog(BuildContext context, QuizNotifier notifier, String questionId) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Yêu cầu giải lại?'),
+        content: const Text('Bạn thấy cấn cấn? Yêu cầu Gia sư AI kiểm tra và giải lại câu này?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Hủy'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Đang yêu cầu AI giải lại...')),
+              );
+              try {
+                await notifier.resolveQuestion(questionId);
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Đã cập nhật lời giải mới!')),
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Lỗi: Không thể giải lại lúc này.')),
+                  );
+                }
+              }
+            },
+            child: const Text('Giải lại'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -134,7 +173,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text('Câu ${quizState.currentQuestionIndex + 1}/${quiz.questions.length}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    const Icon(Icons.flag, color: Colors.red), // Nút Report
+                    IconButton(
+                      icon: const Icon(Icons.flag, color: Colors.red),
+                      tooltip: 'Báo cáo / Giải lại',
+                      onPressed: () {
+                        final notifier = ref.read(quizStateProvider(widget.quizId).notifier);
+                        _showResolveDialog(context, notifier, quiz.questions[quizState.currentQuestionIndex].id);
+                      },
+                    ),
                   ],
                 ),
               ),

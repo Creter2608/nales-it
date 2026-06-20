@@ -75,6 +75,12 @@ class QuizNotifier extends StateNotifier<QuizState> {
     if (state.quiz is AsyncData && state.quiz.value != null) {
       if (state.currentQuestionIndex < state.quiz.value!.questions.length - 1) {
         state = state.copyWith(currentQuestionIndex: state.currentQuestionIndex + 1);
+        
+        // Lazy Loading: Kéo đáp án mới từ server nếu câu hiện tại chưa có đáp án
+        final nextQ = state.quiz.value!.questions[state.currentQuestionIndex];
+        if (nextQ.correctAnswerId == null) {
+          refreshQuiz();
+        }
       }
     }
   }
@@ -97,6 +103,27 @@ class QuizNotifier extends StateNotifier<QuizState> {
       state = state.copyWith(gradeResult: AsyncData(result));
     } catch (e, stack) {
       state = state.copyWith(gradeResult: AsyncError(e, stack));
+    }
+  }
+
+  Future<void> refreshQuiz() async {
+    if (state.quiz is! AsyncData || state.quiz.value == null) return;
+    try {
+      final updatedQuizData = await _repository.getQuiz(quizId);
+      state = state.copyWith(quiz: AsyncData(updatedQuizData));
+    } catch (e) {
+      print("Lỗi refresh quiz: $e");
+    }
+  }
+
+  Future<void> resolveQuestion(String questionId) async {
+    try {
+      final result = await _repository.resolveQuestion(quizId, questionId);
+      if (result['status'] == 'success') {
+        await refreshQuiz();
+      }
+    } catch (e) {
+      throw Exception('Không thể giải lại lúc này: $e');
     }
   }
 }

@@ -7,19 +7,23 @@ from app.schemas.quiz import Quiz
 logger = logging.getLogger(__name__)
 quiz_router = APIRouter()
 
+MOCK_QUIZ_DB = {} # Dictionary lưu trữ tạm thời nếu MongoDB không hoạt động
+
 @quiz_router.get("/{quiz_id}", response_model=Quiz)
 async def get_quiz(quiz_id: str):
     """
-    Lấy thông tin một bài Quiz đã lưu từ MongoDB
+    Lấy thông tin một bài Quiz đã lưu từ MongoDB hoặc Mock DB
     """
+    db = get_database()
+    if db is None:
+        if quiz_id in MOCK_QUIZ_DB:
+            return Quiz(**MOCK_QUIZ_DB[quiz_id])
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+        
     try:
         obj_id = ObjectId(quiz_id)
     except Exception:
         raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
-        
-    db = get_database()
-    if db is None:
-        raise HTTPException(status_code=500, detail="Lỗi kết nối cơ sở dữ liệu.")
         
     quiz_data = await db["quizzes"].find_one({"_id": obj_id})
     if not quiz_data:
@@ -48,13 +52,18 @@ async def grade_quiz(request: GradeRequest):
     """
     Chấm điểm bài làm và gọi AI để nhận xét tổng quan
     """
-    try:
-        obj_id = ObjectId(request.quiz_id)
-    except Exception:
-        raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
-        
     db = get_database()
-    quiz_data = await db["quizzes"].find_one({"_id": obj_id})
+    if db is None:
+        if request.quiz_id in MOCK_QUIZ_DB:
+            quiz_data = MOCK_QUIZ_DB[request.quiz_id]
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+    else:
+        try:
+            obj_id = ObjectId(request.quiz_id)
+        except Exception:
+            raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
+        quiz_data = await db["quizzes"].find_one({"_id": obj_id})
     if not quiz_data:
         raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
         
@@ -112,3 +121,62 @@ Không cần giải chi tiết từng câu, chỉ nhận xét tổng quan.
             feedback = "Rất tiếc, AI đang bận nên không thể đưa ra nhận xét lúc này."
             
     return GradeResponse(score=score, total=total, ai_feedback=feedback)
+
+class ResolveRequest(BaseModel):
+    quiz_id: str
+    question_id: str
+
+@quiz_router.post("/resolve")
+async def resolve_question(request: ResolveRequest):
+    """
+    Giải lại 1 câu hỏi cụ thể theo yêu cầu của học sinh (Cờ đỏ 🚩)
+    """
+    db = get_database()
+    # Tìm Quiz
+    if db is None:
+        if request.quiz_id in MOCK_QUIZ_DB:
+            quiz_data = MOCK_QUIZ_DB[request.quiz_id]
+        else:
+            raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+    else:
+        try:
+            obj_id = ObjectId(request.quiz_id)
+            quiz_data = await db["quizzes"].find_one({"_id": obj_id})
+        except Exception:
+            raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
+            
+    if not quiz_data:
+        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+
+    # Tìm Question
+    target_q = None
+    for q in quiz_data["questions"]:
+        if str(q["id"]) == request.question_id:
+            target_q = q
+            break
+            
+    if not target_q:
+        raise HTTPException(status_code=404, detail="Không tìm thấy câu hỏi.")
+        
+    from app.services.quiz_generator import resolve_single_question
+    
+    try:
+        new_result = await resolve_single_question(
+            target_q["content"],
+            target_q["answers"],
+            target_q.get("correct_answer_id", ""),
+            target_q.get("explanation", "")
+        )
+        target_q["correct_answer_id"] = new_result.get("correct_answer_id")
+        target_q["explanation"] = new_result.get("explanation")
+        
+        # Save back
+        if db is not None:
+            await db["quizzes"].replace_one({"_id": obj_id}, quiz_data)
+        else:
+            MOCK_QUIZ_DB[request.quiz_id] = quiz_data
+            
+        return {"status": "success", "new_answer": target_q["correct_answer_id"], "new_explanation": target_q["explanation"]}
+    except Exception as e:
+        logger.error(f"Lỗi giải lại câu hỏi: {e}")
+        raise HTTPException(status_code=500, detail="Không thể giải lại câu hỏi lúc này.")

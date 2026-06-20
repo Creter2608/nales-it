@@ -12,9 +12,15 @@ db = Database()
 async def connect_to_mongo():
     logger.info("Đang kết nối tới MongoDB...")
     mongo_url = "mongodb://localhost:27017" # Dùng localhost cho môi trường phát triển cục bộ
-    db.client = motor.motor_asyncio.AsyncIOMotorClient(mongo_url)
-    db.db = db.client.nales_it
-    logger.info("Kết nối MongoDB thành công!")
+    try:
+        db.client = motor.motor_asyncio.AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=2000)
+        await db.client.server_info() # Kiểm tra kết nối nhanh
+        db.db = db.client.nales_it
+        logger.info("Kết nối MongoDB thành công!")
+    except Exception as e:
+        logger.warning("Không thể kết nối MongoDB. Hệ thống sẽ tự động chuyển sang chế độ Mock DB (Bộ nhớ tạm).")
+        db.client = None
+        db.db = None
 
 async def close_mongo_connection():
     logger.info("Đóng kết nối MongoDB...")

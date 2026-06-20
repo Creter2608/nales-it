@@ -17,6 +17,17 @@ class QuizRepository {
     return Quiz.fromJson(response.data);
   }
 
+  Future<Map<String, dynamic>> resolveQuestion(String quizId, String questionId) async {
+    final response = await _dio.post(
+      '/api/v1/quiz/resolve',
+      data: {
+        'quiz_id': quizId,
+        'question_id': questionId,
+      },
+    );
+    return response.data;
+  }
+
   Future<Map<String, dynamic>> gradeQuiz(String quizId, Map<String, String> userAnswers) async {
     final response = await _dio.post(
       '/api/v1/quiz/grade',
