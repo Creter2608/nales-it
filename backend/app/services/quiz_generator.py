@@ -34,8 +34,9 @@ Cấu trúc JSON mong đợi:
     "title": "Tên bài kiểm tra",
     "questions": [
         {{
-            "question_text": "Nội dung câu hỏi?",
-            "options": [
+            "id": "1",
+            "content": "Nội dung câu hỏi?",
+            "answers": [
                 {{"id": "A", "content": "Đáp án 1"}},
                 {{"id": "B", "content": "Đáp án 2"}}
             ],

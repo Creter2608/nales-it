@@ -2,15 +2,17 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class Answer(BaseModel):
-    id: str = Field(description="Mã đáp án (ví dụ: A, B, C, D)")
-    content: str = Field(description="Nội dung đáp án")
+    id: str = Field(..., description="ID của đáp án, ví dụ: 'A', 'B', 'C', 'D'")
+    content: str = Field(..., description="Nội dung của đáp án")
 
 class Question(BaseModel):
-    question_text: str = Field(description="Nội dung câu hỏi")
-    options: List[Answer] = Field(description="Danh sách các lựa chọn đáp án")
-    correct_answer_id: str = Field(description="Mã của đáp án đúng (ví dụ: A)")
-    explanation: Optional[str] = Field(None, description="Giải thích chi tiết vì sao đáp án đó đúng (nếu có)")
+    id: str = Field(..., description="ID của câu hỏi, ví dụ: '1', '2', '3'")
+    content: str = Field(..., description="Nội dung câu hỏi")
+    answers: List[Answer] = Field(..., description="Danh sách các đáp án (A, B, C, D)")
+    correct_answer_id: Optional[str] = Field(None, description="ID của đáp án đúng. Có thể null nếu không có đáp án.")
+    explanation: Optional[str] = Field(None, description="Giải thích tại sao lại chọn đáp án này. Có thể null.")
 
 class Quiz(BaseModel):
-    title: str = Field(description="Tiêu đề của bài trắc nghiệm")
-    questions: List[Question] = Field(description="Danh sách các câu hỏi")
+    id: Optional[str] = Field(None, description="ID của bài trắc nghiệm trong database (MongoDB Object ID)")
+    title: str = Field(..., description="Tiêu đề của bài trắc nghiệm")
+    questions: List[Question] = Field(..., description="Danh sách các câu hỏi")

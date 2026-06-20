@@ -1,12 +1,21 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 from app.api.router import api_router
 from app.core.config import settings
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    from app.db.mongodb import connect_to_mongo, close_mongo_connection
+    await connect_to_mongo()
+    yield
+    await close_mongo_connection()
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     description="AI Quiz Generator Backend",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
 
 # Thêm CORS để cho phép gọi API từ Web (Chrome/Edge)

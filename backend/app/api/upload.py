@@ -32,7 +32,19 @@ async def upload_pdf(file: UploadFile = File(...)):
         logger.info("Bắt đầu gửi văn bản cho Gemini AI xử lý... Quá trình này có thể mất thời gian.")
         quiz = await generate_quiz_from_text(text)
         
-        logger.info(f"Tạo Quiz thành công! Tiêu đề: '{quiz.title}' với {len(quiz.questions)} câu hỏi.")
+        # Bước 3: Lưu Quiz vào MongoDB
+        from app.db.mongodb import get_database
+        db = get_database()
+        if db is not None:
+            logger.info("Đang lưu Quiz vào MongoDB...")
+            quiz_dict = quiz.model_dump(exclude={"id"}) # Bỏ field id rỗng để Mongo tự sinh _id
+            result = await db["quizzes"].insert_one(quiz_dict)
+            quiz.id = str(result.inserted_id)
+            logger.info(f"Lưu Database thành công! Quiz ID: {quiz.id}")
+        else:
+            logger.warning("CẢNH BÁO: Không có kết nối MongoDB, bài Quiz chưa được lưu.")
+            
+        logger.info(f"Hoàn tất quá trình! Tiêu đề: '{quiz.title}' với {len(quiz.questions)} câu hỏi.")
         return quiz
     except ValueError as ve:
         raise HTTPException(status_code=422, detail=str(ve))
