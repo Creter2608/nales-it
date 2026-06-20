@@ -11,10 +11,11 @@ class UploadScreen extends ConsumerWidget {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
+      withData: true, // Quan trọng: Bắt buộc lấy dữ liệu dạng byte khi chạy trên Web
     );
 
-    if (result != null && result.files.single.path != null) {
-      File file = File(result.files.single.path!);
+    if (result != null) {
+      PlatformFile file = result.files.single;
       ref.read(uploadStateProvider.notifier).uploadFile(file);
     }
   }
