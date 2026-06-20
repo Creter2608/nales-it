@@ -41,5 +41,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng**: Tính năng giao tiếp trực tiếp với linh vật Nales để thiết kế đề ôn tập theo yêu cầu chủ đề cụ thể.
 - **Cách thức hoạt động**: Thay vì tự tải đề lên, học sinh chỉ cần chat/yêu cầu Nales: *"Hãy giúp mình ôn cấp tốc môn Database"*. Hệ thống sẽ ngay lập tức truy vấn vào **Ngân hàng Câu hỏi** để tổng hợp ra một bộ đề bao quát toàn bộ các mảng kiến thức cốt lõi nhất của môn Database. Giúp học sinh ôn thi "nước rút" ngay trước giờ G một cách hiệu quả nhất.
 
+### 10. Chống trùng lặp Đa ngôn ngữ (Cross-lingual Deduplication)
+- **Vấn đề**: Ứng dụng định hướng quốc tế, cùng một bài toán (ví dụ Toán học) nhưng người dùng upload bằng tiếng Anh, tiếng Việt, hoặc tiếng Tây Ban Nha. Việc lưu trữ nhiều bản dịch của cùng một câu hỏi gây lãng phí dung lượng Database và tốn kém phí xử lý AI.
+- **Giải pháp**: Sử dụng **Cross-lingual Text Embeddings** (Nhúng vector đa ngôn ngữ). Hệ thống sẽ chuyển hóa ý nghĩa (Semantic) của câu hỏi thành Vector toán học chung độc lập với ngôn ngữ. Khi đó, câu hỏi tiếng Anh và tiếng Việt sẽ có chung một Vector. Hệ thống chỉ cần lưu 1 bản gốc (hoặc 1 Vector trung tâm), và dùng AI dịch thuật Real-time (hoặc lưu các bản dịch nhẹ đính kèm) khi trả kết quả cho người dùng ở các quốc gia khác nhau.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
