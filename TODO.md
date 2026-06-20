@@ -37,5 +37,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng**: Xây dựng nhận diện thương hiệu (Branding) với linh vật là một trợ lý AI mang tên **Nales**.
 - **Cách thức hoạt động**: Khi học sinh làm đúng một câu hỏi khó hoặc đạt điểm xuất sắc trong bài thi, một Popup/Animation của Nales sẽ xuất hiện với câu thoại đặc trưng: **"Nales It!"** (Chơi chữ của từ "Nailed It!" - Làm tốt lắm/Đỉnh quá!). Giúp tạo động lực, sự thân thiện và yếu tố Gamification cho ứng dụng.
 
+### 9. Chế độ "Ôn thi cấp tốc" (Crash Course / Speed Run)
+- **Ý tưởng**: Tính năng giao tiếp trực tiếp với linh vật Nales để thiết kế đề ôn tập theo yêu cầu chủ đề cụ thể.
+- **Cách thức hoạt động**: Thay vì tự tải đề lên, học sinh chỉ cần chat/yêu cầu Nales: *"Hãy giúp mình ôn cấp tốc môn Database"*. Hệ thống sẽ ngay lập tức truy vấn vào **Ngân hàng Câu hỏi** để tổng hợp ra một bộ đề bao quát toàn bộ các mảng kiến thức cốt lõi nhất của môn Database. Giúp học sinh ôn thi "nước rút" ngay trước giờ G một cách hiệu quả nhất.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
