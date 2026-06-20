@@ -37,5 +37,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     except ValueError as ve:
         raise HTTPException(status_code=422, detail=str(ve))
     except Exception as e:
-        logger.error(f"Lỗi xử lý file: {e}")
-        raise HTTPException(status_code=500, detail="Đã xảy ra lỗi nội bộ trong quá trình xử lý.")
+        import traceback
+        error_details = traceback.format_exc()
+        logger.error(f"Lỗi xử lý file:\n{error_details}")
+        raise HTTPException(status_code=500, detail=f"Lỗi máy chủ (500): {str(e)}")

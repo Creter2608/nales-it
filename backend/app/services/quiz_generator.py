@@ -15,7 +15,7 @@ async def generate_quiz_from_text(text: str) -> Quiz:
         raise ValueError("GEMINI_API_KEY chưa được cấu hình!")
 
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash-latest", 
+        model="gemini-pro", 
         google_api_key=settings.GEMINI_API_KEY,
         temperature=0.2, # Giữ temperature thấp để kết quả ổn định và đúng format
     )
