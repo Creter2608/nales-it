@@ -135,6 +135,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     return quizState.quiz.when(
       data: (quiz) {
         if (quiz == null) return const Scaffold(body: Center(child: Text('Không tìm thấy bài thi.')));
+        if (quiz.questions.isEmpty) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Lỗi tải đề'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
+            body: const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Tài liệu rỗng hoặc AI không tìm thấy câu hỏi trắc nghiệm nào. Vui lòng tải file khác.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)))),
+          );
+        }
         
         if (quizState.isSubmitted) {
           return ResultScreen(quizId: widget.quizId);

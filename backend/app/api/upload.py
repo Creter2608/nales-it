@@ -64,8 +64,7 @@ async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(
     try:
         # Bước 1
         logger.info(f"Nhận file: {file.filename}")
-        pdf_bytes = await file.read()
-        text = extract_text_from_pdf(pdf_bytes)
+        text = await extract_text_from_pdf(file)
         
         # Bước 2: Gọi AI (chỉ giải 5 câu đầu)
         logger.info("Bắt đầu gửi văn bản cho Gemini AI (Tách 2 nhịp)...")
