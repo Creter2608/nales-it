@@ -29,5 +29,9 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - **Ý tưởng**: Dựa trên "Ngân hàng Câu hỏi" đã xây dựng ở mục 5, chúng ta sẽ làm một thanh công cụ Search (Tìm kiếm). Học sinh không cần phải upload nguyên cái đề, mà chỉ cần gõ nội dung câu hỏi (hoặc chụp ảnh câu hỏi) lên thanh tìm kiếm.
 - **Cách thức hoạt động**: Hệ thống sẽ truy vấn vào Vector DB (Semantic Search) để tìm ra các câu hỏi tương tự nhất đã được AI giải trước đó. Hoạt động giống hệt chức năng tìm kiếm của một diễn đàn học tập cộng đồng (như Hocmai, VietJack,...), giúp học sinh tham khảo cách giải ngay lập tức.
 
+### 7. Hệ thống Đánh giá Cá nhân hóa (Personalized Learning & Recommendation)
+- **Ý tưởng**: Thu thập dữ liệu lịch sử làm bài (Quiz History) của từng học sinh. AI sẽ tổng hợp và phân tích xem học sinh đó thường trả lời sai ở dạng bài nào, chuyên đề nào.
+- **Cách thức hoạt động**: Từ bảng đánh giá điểm yếu (Knowledge Gaps), hệ thống sẽ chủ động "nhặt" các câu hỏi từ **Ngân hàng Câu hỏi (Question Bank)** để tạo ra một "Đề thi Ôn tập (Tailored Quiz)" dành riêng cho học sinh đó. Tính năng này giống như một Gia sư cá nhân thực thụ theo dõi sát sao sự tiến bộ của học sinh.
+
 ---
 *Ghi chú này được tạo ra để chuẩn bị cho phiên làm việc nâng cấp hiệu suất tiếp theo!*
