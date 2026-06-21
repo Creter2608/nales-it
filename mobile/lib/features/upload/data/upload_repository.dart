@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart'; // Để dùng kIsWeb
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 
@@ -40,14 +41,12 @@ class UploadRepository {
 
   UploadRepository(this._dio);
 
-  Future<Map<String, dynamic>> uploadPdf(PlatformFile file) async {
+  Stream<Map<String, dynamic>> uploadPdfStream(PlatformFile file) async* {
     MultipartFile multipartFile;
 
     if (kIsWeb) {
-      // Trên Web, không có đường dẫn vật lý (path null), bắt buộc lấy file từ bytes bộ nhớ
       multipartFile = MultipartFile.fromBytes(file.bytes!, filename: file.name);
     } else {
-      // Trên Mobile/Desktop, lấy theo đường dẫn
       multipartFile = await MultipartFile.fromFile(
         file.path!,
         filename: file.name,
@@ -56,7 +55,34 @@ class UploadRepository {
 
     final formData = FormData.fromMap({'file': multipartFile});
 
-    final response = await _dio.post('/api/v1/upload/pdf', data: formData);
-    return response.data;
+    final response = await _dio.post(
+      '/api/v1/upload/pdf',
+      data: formData,
+      options: Options(responseType: ResponseType.stream),
+    );
+
+    final stream = response.data.stream;
+    String buffer = '';
+
+    await for (final bytes in stream) {
+      final chunk = utf8.decode(bytes as List<int>);
+      buffer += chunk;
+      
+      while (buffer.contains('\n\n')) {
+        final index = buffer.indexOf('\n\n');
+        final block = buffer.substring(0, index);
+        buffer = buffer.substring(index + 2);
+        
+        final lines = block.split('\n');
+        for (final line in lines) {
+          if (line.startsWith('data: ')) {
+            final jsonStr = line.substring(6);
+            if (jsonStr.trim().isNotEmpty) {
+              yield jsonDecode(jsonStr) as Map<String, dynamic>;
+            }
+          }
+        }
+      }
+    }
   }
 }

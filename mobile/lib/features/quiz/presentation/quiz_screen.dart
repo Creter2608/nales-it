@@ -1,8 +1,25 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
+import 'package:markdown/markdown.dart' as markdown;
 import '../domain/quiz_models.dart';
 import 'quiz_state.dart';
 import 'result_screen.dart';
+
+class MathMarkdownBuilder extends MarkdownElementBuilder {
+  @override
+  Widget visitElementAfter(element, TextStyle? preferredStyle) {
+    if (element.textContent.isEmpty) return const SizedBox();
+    return Math.tex(
+      element.textContent,
+      textStyle: preferredStyle?.copyWith(fontSize: 18),
+      mathStyle: MathStyle.display,
+    );
+  }
+}
+
 
 class QuizScreen extends ConsumerStatefulWidget {
   final String quizId;
@@ -116,6 +133,68 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
     );
   }
 
+  void _showGridNavigation(BuildContext context, Quiz quiz, QuizState state, WidgetRef ref) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) {
+        return Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              const Text('Bảng câu hỏi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Expanded(
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 5,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                  itemCount: quiz.questions.length + (state.isStreaming ? 3 : 0),
+                  itemBuilder: (context, index) {
+                    if (index >= quiz.questions.length) {
+                      return Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          border: Border.all(color: Colors.grey.shade400),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: const SizedBox(
+                          width: 20, height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    
+                    final q = quiz.questions[index];
+                    final isAnswered = state.userAnswers.containsKey(q.id);
+                    return InkWell(
+                      onTap: () {
+                        Navigator.pop(context);
+                        ref.read(quizStateProvider(widget.quizId).notifier).jumpToQuestion(index);
+                        _pageController.jumpToPage(index);
+                      },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: isAnswered ? Colors.blue.shade100 : Colors.white,
+                          border: Border.all(color: Colors.blue),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        alignment: Alignment.center,
+                        child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: isAnswered ? Colors.blue.shade900 : Colors.black87)),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -136,12 +215,26 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
       data: (quiz) {
         if (quiz == null) return const Scaffold(body: Center(child: Text('Không tìm thấy bài thi.')));
         if (quiz.questions.isEmpty) {
+          if (quizState.isStreaming) {
+            return Scaffold(
+              appBar: AppBar(title: Text(quiz.title), backgroundColor: Colors.blue, foregroundColor: Colors.white),
+              body: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(color: Colors.blue),
+                    SizedBox(height: 16),
+                    Text('Đang phân tích PDF và tải câu hỏi...', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                  ],
+                ),
+              ),
+            );
+          }
           return Scaffold(
             appBar: AppBar(title: const Text('Lỗi tải đề'), backgroundColor: Colors.blue, foregroundColor: Colors.white),
             body: const Center(child: Padding(padding: EdgeInsets.all(16), child: Text('Tài liệu rỗng hoặc AI không tìm thấy câu hỏi trắc nghiệm nào. Vui lòng tải file khác.', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)))),
           );
         }
-        
         if (quizState.isSubmitted) {
           return ResultScreen(quizId: widget.quizId);
         }
@@ -158,6 +251,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
             backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
             actions: [
+              IconButton(
+                icon: const Icon(Icons.grid_view),
+                tooltip: 'Bảng câu hỏi',
+                onPressed: () => _showGridNavigation(context, quiz, quizState, ref),
+              ),
               TextButton(
                 onPressed: () {
                   ref.read(quizStateProvider(widget.quizId).notifier).submitQuiz();
@@ -200,7 +298,48 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                     return ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
-                        Text(q.content, style: const TextStyle(fontSize: 20)),
+                        if (q.sharedContext != null && q.sharedContext!.isNotEmpty) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.yellow.shade100,
+                              border: Border.all(color: Colors.orange),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Row(
+                                  children: [
+                                    Icon(Icons.info_outline, color: Colors.orange),
+                                    SizedBox(width: 8),
+                                    Text('Thông tin chung:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                                MarkdownBody(
+                                  data: q.sharedContext!,
+                                  builders: {'math': MathMarkdownBuilder()},
+                                  extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (q.imageBase64 != null && q.imageBase64!.isNotEmpty) ...[
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.memory(base64Decode(q.imageBase64!)),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        MarkdownBody(
+                          data: q.content,
+                          builders: {'math': MathMarkdownBuilder()},
+                          extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                          styleSheet: MarkdownStyleSheet(p: const TextStyle(fontSize: 20)),
+                        ),
                         const SizedBox(height: 24),
                         ...q.answers.map((ans) {
                           Color? btnColor;
@@ -228,7 +367,20 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               onPressed: () {
                                 ref.read(quizStateProvider(widget.quizId).notifier).selectAnswer(q.id, ans.id);
                               },
-                              child: Text('${ans.id}. ${ans.content}', style: TextStyle(fontSize: 16, color: btnColor != null && btnColor != Colors.blue.shade200 ? Colors.white : Colors.black87)),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('${ans.id}. ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: btnColor != null && btnColor != Colors.blue.shade200 ? Colors.white : Colors.black87)),
+                                  Expanded(
+                                    child: MarkdownBody(
+                                      data: ans.content,
+                                      builders: {'math': MathMarkdownBuilder()},
+                                      extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                                      styleSheet: MarkdownStyleSheet(p: TextStyle(fontSize: 16, color: btnColor != null && btnColor != Colors.blue.shade200 ? Colors.white : Colors.black87)),
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         }),
@@ -242,7 +394,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               children: [
                                 const Text('💡 Giải thích từ AI:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
                                 const SizedBox(height: 8),
-                                Text(q.explanation!),
+                                MarkdownBody(
+                                  data: q.explanation!,
+                                  builders: {'math': MathMarkdownBuilder()},
+                                  extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                                ),
                                 const SizedBox(height: 12),
                                 const Text('🤖 Lời giải này được sinh ra bởi AI nên có thể không chính xác 100%. Vui lòng tham khảo thêm tài liệu chính thống.', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
                               ],

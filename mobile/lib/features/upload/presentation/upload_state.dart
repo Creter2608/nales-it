@@ -14,8 +14,9 @@ class UploadNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
   Future<void> uploadFile(PlatformFile file) async {
     state = const AsyncLoading();
     try {
-      final result = await _repository.uploadPdf(file);
-      state = AsyncData(result);
+      // Not used anymore as we stream directly in UploadScreen, but keeping for compile
+      final stream = _repository.uploadPdfStream(file);
+      state = AsyncData(null);
     } catch (e, stack) {
       state = AsyncError(e, stack);
     }

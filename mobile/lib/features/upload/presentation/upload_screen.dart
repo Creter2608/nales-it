@@ -2,22 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import '../data/upload_repository.dart';
+import '../../quiz/presentation/quiz_state.dart';
 import 'upload_state.dart';
 
 class UploadScreen extends ConsumerWidget {
   const UploadScreen({super.key});
 
-  Future<void> _pickAndUploadFile(WidgetRef ref) async {
+  Future<void> _pickAndUploadFile(WidgetRef ref, BuildContext context) async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf'],
-      withData:
-          true, // Quan trọng: Bắt buộc lấy dữ liệu dạng byte khi chạy trên Web
+      withData: true, 
     );
 
     if (result != null) {
       PlatformFile file = result.files.single;
-      ref.read(uploadStateProvider.notifier).uploadFile(file);
+      final repo = ref.read(uploadRepositoryProvider);
+      final stream = repo.uploadPdfStream(file);
+      
+      ref.read(quizStateProvider('streaming').notifier).startStreamingQuiz(stream);
+      GoRouter.of(context).push('/quiz/streaming');
     }
   }
 
@@ -115,7 +120,7 @@ class UploadScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () => _pickAndUploadFile(ref),
+                    onPressed: () => _pickAndUploadFile(ref, context),
                     icon: const Icon(Icons.upload_file, size: 28),
                     label: const Text('Tải file PDF lên'),
                   );
@@ -146,7 +151,7 @@ class UploadScreen extends ConsumerWidget {
                     ),
                     const SizedBox(height: 24),
                     OutlinedButton.icon(
-                      onPressed: () => _pickAndUploadFile(ref),
+                      onPressed: () => _pickAndUploadFile(ref, context),
                       icon: const Icon(Icons.refresh),
                       label: const Text('Thử lại file khác'),
                     ),

@@ -4,15 +4,15 @@ Dự án ứng dụng di động giáo dục thế hệ mới, tự động bóc
 
 ## 🌟 Tính Năng Nổi Bật
 
-### 1. Kiến trúc Trí tuệ Nhân tạo Đa tầng (Two-Pass Pipeline)
-- **Fast Extraction**: Sử dụng `gemini-flash-latest` để đọc và bóc tách cấu trúc file PDF cực nhanh.
+### 1. Kiến trúc Trí tuệ Nhân tạo Đa tầng (Two-Pass Pipeline) & Streaming
+- **Fast Extraction (Streaming)**: Tách PDF thành các trang nhỏ, xử lý song song bằng `gemini-1.5-flash`, và trả dữ liệu về Mobile theo thời gian thực (SSE - Server-Sent Events) giúp ứng dụng phản hồi chớp nhoáng.
 - **Deep Reasoning**: Tự động dùng `gemini-3.1-pro-preview` đóng vai trò Gia sư để giải các câu hỏi không có đáp án, và nhận xét điểm yếu/mạnh của học sinh ở cuối bài.
-- **Background Chunking**: Tự động băm nhỏ đề thi dài thành các cụm 5 câu. API chỉ giải 5 câu đầu và trả kết quả ngay, các câu còn lại được AI giải ngầm ở Background giúp ứng dụng khởi động tức thì, chống dính Timeout.
+- **Background Chunking**: Tính năng gom cụm thông minh giúp AI bóc tách đến đâu học sinh làm bài đến đó, các thao tác phụ trợ được xử lý ở Background chống dính Timeout.
 
-### 2. Trải nghiệm Mobile Mượt Mà (Lazy Loading)
+### 2. Trải nghiệm Mobile Mượt Mà (Progressive Loading)
 - 4 chế độ làm bài thông minh: **Ôn Luyện**, **Thi Thử**, **Đánh Giá AI**, và **Tự Do**.
 - Giao diện tone màu **Xanh Da Trời (Sky Blue)** thân thiện.
-- Tính năng **Lazy Loading**: Khi học sinh lướt PageView sang câu mới, Mobile tự động kéo đáp án (vừa được AI giải ngầm xong) từ Server về một cách lặng lẽ.
+- Tính năng **Progressive Loading**: Hiệu ứng UI như xem video YouTube, câu hỏi hiện dần trong lúc AI đang chạy ngầm, tích hợp Lazy Loading gọi đáp án mượt mà.
 
 ### 3. Tương tác "Giải Lại" (Re-solve) Độc Đáo
 - Nếu cảm thấy lời giải của AI "cấn cấn", học sinh có thể bấm biểu tượng Cờ đỏ 🚩. 
@@ -43,4 +43,4 @@ flutter run -d chrome  # hoặc flutter run -d edge
 ```
 
 ## 📝 Nhật ký Phát triển
-Dự án đã hoàn thiện Phase 6 (Background Task, Chunking, Resolve AI, và Giao diện UI). Sẵn sàng cho những đợt nâng cấp tiếp theo trong tương lai!
+Dự án đã hoàn thiện Phase 7 (Cơ chế Progressive Streaming qua Server-Sent Events, Pagination Chunking cho PDF, Giao diện Loading mượt mà trên Mobile, và Xử lý Rate Limit với `gemini-1.5-flash`). Sẵn sàng cho những đợt nâng cấp tiếp theo về Ngân hàng Câu hỏi và Social Features!

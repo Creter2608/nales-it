@@ -9,6 +9,7 @@ class QuizState {
   final Map<String, String> userAnswers; // questionId -> answerId
   final bool isSubmitted;
   final AsyncValue<Map<String, dynamic>?> gradeResult;
+  final bool isStreaming;
 
   QuizState({
     this.quiz = const AsyncLoading(),
@@ -17,6 +18,7 @@ class QuizState {
     this.userAnswers = const {},
     this.isSubmitted = false,
     this.gradeResult = const AsyncData(null),
+    this.isStreaming = false,
   });
 
   QuizState copyWith({
@@ -26,6 +28,7 @@ class QuizState {
     Map<String, String>? userAnswers,
     bool? isSubmitted,
     AsyncValue<Map<String, dynamic>?>? gradeResult,
+    bool? isStreaming,
   }) {
     return QuizState(
       quiz: quiz ?? this.quiz,
@@ -34,6 +37,7 @@ class QuizState {
       userAnswers: userAnswers ?? this.userAnswers,
       isSubmitted: isSubmitted ?? this.isSubmitted,
       gradeResult: gradeResult ?? this.gradeResult,
+      isStreaming: isStreaming ?? this.isStreaming,
     );
   }
 }
@@ -47,7 +51,9 @@ class QuizNotifier extends StateNotifier<QuizState> {
   final String quizId;
 
   QuizNotifier(this._repository, this.quizId) : super(QuizState()) {
-    _loadQuiz();
+    if (quizId != "streaming") {
+      _loadQuiz();
+    }
   }
 
   Future<void> _loadQuiz() async {
@@ -57,6 +63,111 @@ class QuizNotifier extends StateNotifier<QuizState> {
     } catch (e, stack) {
       state = state.copyWith(quiz: AsyncError(e, stack));
     }
+  }
+
+  void startStreamingQuiz(Stream<Map<String, dynamic>> stream) {
+    state = state.copyWith(
+      isStreaming: true,
+      quiz: AsyncData(Quiz(title: "Đang xử lý PDF...", questions: [])),
+    );
+
+    stream.listen((event) {
+      final type = event['type'];
+      final currentQuiz = state.quiz.value;
+      if (currentQuiz == null) return;
+
+      if (type == 'chunk') {
+        final newQuestions = (event['questions'] as List)
+            .map((e) => Question.fromJson(e))
+            .toList();
+        state = state.copyWith(
+          quiz: AsyncData(
+            Quiz(
+              id: currentQuiz.id,
+              title: currentQuiz.title,
+              questions: [...currentQuiz.questions, ...newQuestions],
+            ),
+          ),
+        );
+      } else if (type == 'images_mapped') {
+        final updates = event['updates'] as List;
+        final updateMap = {for (var u in updates) u['id'].toString(): u['image_base64']};
+        final updatedQuestions = currentQuiz.questions.map((q) {
+          if (updateMap.containsKey(q.id)) {
+            return Question(
+              id: q.id,
+              content: q.content,
+              answers: q.answers,
+              correctAnswerId: q.correctAnswerId,
+              explanation: q.explanation,
+              sharedContext: q.sharedContext,
+              imageBase64: updateMap[q.id],
+            );
+          }
+          return q;
+        }).toList();
+        state = state.copyWith(
+          quiz: AsyncData(
+            Quiz(
+              id: currentQuiz.id,
+              title: currentQuiz.title,
+              questions: updatedQuestions,
+            ),
+          ),
+        );
+      } else if (type == 'answers_solved') {
+        final updates = event['updates'] as List;
+        final updateMap = {for (var u in updates) u['id'].toString(): u};
+        final updatedQuestions = currentQuiz.questions.map((q) {
+          if (updateMap.containsKey(q.id)) {
+            final u = updateMap[q.id];
+            return Question(
+              id: q.id,
+              content: q.content,
+              answers: q.answers,
+              correctAnswerId: u['correct_answer_id'],
+              explanation: u['explanation'],
+              sharedContext: q.sharedContext,
+              imageBase64: q.imageBase64,
+            );
+          }
+          return q;
+        }).toList();
+        state = state.copyWith(
+          quiz: AsyncData(
+            Quiz(
+              id: currentQuiz.id,
+              title: currentQuiz.title,
+              questions: updatedQuestions,
+            ),
+          ),
+        );
+      } else if (type == 'done') {
+        final finalQuizData = event['quiz_data'];
+        final finalTitle = event['title'] ?? currentQuiz.title;
+        final finalId = event['quiz_id'] ?? currentQuiz.id;
+        state = state.copyWith(
+          isStreaming: false,
+          quiz: AsyncData(
+            Quiz(
+              id: finalId,
+              title: finalTitle,
+              questions: currentQuiz.questions, // Keep the built list, since we updated incrementally!
+            ),
+          ),
+        );
+      } else if (type == 'error') {
+        state = state.copyWith(
+          isStreaming: false,
+          quiz: AsyncError(event['detail'] ?? "Unknown error", StackTrace.current),
+        );
+      }
+    }, onError: (error) {
+      state = state.copyWith(
+        isStreaming: false,
+        quiz: AsyncError(error, StackTrace.current),
+      );
+    });
   }
 
   void setMode(QuizMode mode) {
@@ -88,6 +199,19 @@ class QuizNotifier extends StateNotifier<QuizState> {
   void previousQuestion() {
     if (state.currentQuestionIndex > 0) {
       state = state.copyWith(currentQuestionIndex: state.currentQuestionIndex - 1);
+    }
+  }
+
+  void jumpToQuestion(int index) {
+    if (state.quiz is AsyncData && state.quiz.value != null) {
+      if (index >= 0 && index < state.quiz.value!.questions.length) {
+        state = state.copyWith(currentQuestionIndex: index);
+        
+        final targetQ = state.quiz.value!.questions[index];
+        if (targetQ.correctAnswerId == null) {
+          refreshQuiz();
+        }
+      }
     }
   }
 

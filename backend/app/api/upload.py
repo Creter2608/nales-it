@@ -59,41 +59,52 @@ async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
             logger.error(f"[Background Task] Lỗi khi giải cụm câu hỏi: {e}")
             # Có thể thử lại hoặc bỏ qua, với MVP ta bỏ qua cụm lỗi.
 
+from fastapi.responses import StreamingResponse
+import json
+
 @router.post("/pdf")
 async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
-    try:
-        # Bước 1
-        logger.info(f"Nhận file: {file.filename}")
-        text = await extract_text_from_pdf(file)
-        
-        # Bước 2: Gọi AI (chỉ giải 5 câu đầu)
-        logger.info("Bắt đầu gửi văn bản cho Gemini AI (Tách 2 nhịp)...")
-        quiz, remaining_unsolved = await generate_quiz_from_text(text)
-        
-        # Bước 3: Lưu Database (với 5 câu đầu đã giải)
-        from app.db.mongodb import get_database
-        db = get_database()
-        if db is not None:
-            quiz_dict = quiz.model_dump(exclude={"id"})
-            result = await db["quizzes"].insert_one(quiz_dict)
-            quiz.id = str(result.inserted_id)
-        else:
-            import uuid
-            quiz.id = str(uuid.uuid4())
-            from app.api.quiz import MOCK_QUIZ_DB
-            quiz_dict = quiz.model_dump()
-            quiz_dict["id"] = quiz.id
-            MOCK_QUIZ_DB[quiz.id] = quiz_dict
+    async def event_generator():
+        try:
+            logger.info(f"Nhận file: {file.filename}")
+            chunks = await extract_text_from_pdf(file)
             
-        # Kích hoạt Background Task
-        if remaining_unsolved:
-            background_tasks.add_task(background_solve_chunking, quiz.id, remaining_unsolved)
+            logger.info(f"Bắt đầu stream SSE từ {len(chunks)} chunk(s)...")
+            from app.services.quiz_generator import stream_quiz_from_pdf
             
-        logger.info(f"Hoàn tất Upload! Trả về Quiz: {quiz.id}. Còn lại {len(remaining_unsolved)} câu đang chạy ngầm.")
-        return quiz
-    except ValueError as ve:
-        raise HTTPException(status_code=422, detail=str(ve))
-    except Exception as ve:
-        import traceback
-        logger.error(traceback.format_exc())
-        raise HTTPException(status_code=500, detail=f"Lỗi máy chủ (500): {str(ve)}")
+            async for event in stream_quiz_from_pdf(chunks, file=file):
+                if event["type"] == "done":
+                    # Lưu Database
+                    quiz_data = event.pop("quiz_data")
+                    remaining_unsolved = event.pop("unsolved")
+                    
+                    from app.db.mongodb import get_database
+                    db = get_database()
+                    quiz_id = None
+                    if db is not None:
+                        result = await db["quizzes"].insert_one(quiz_data)
+                        quiz_id = str(result.inserted_id)
+                    else:
+                        import uuid
+                        quiz_id = str(uuid.uuid4())
+                        from app.api.quiz import MOCK_QUIZ_DB
+                        quiz_data["id"] = quiz_id
+                        MOCK_QUIZ_DB[quiz_id] = quiz_data
+                        
+                    event["quiz_id"] = quiz_id
+                    
+                    # Kích hoạt Background Task
+                    if remaining_unsolved:
+                        background_tasks.add_task(background_solve_chunking, quiz_id, remaining_unsolved)
+                        
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                else:
+                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                    
+        except Exception as e:
+            import traceback
+            logger.error(traceback.format_exc())
+            error_event = {"type": "error", "detail": f"Lỗi máy chủ: {str(e)}"}
+            yield f"data: {json.dumps(error_event, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(event_generator(), media_type="text/event-stream")

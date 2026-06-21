@@ -6,10 +6,10 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 
 ## 🎯 Các giải pháp cần thực hiện ở Phase tới:
 
-### 1. Băm nhỏ quá trình đọc PDF (Concurrent Extraction)
+### ~~1. Băm nhỏ quá trình đọc PDF (Concurrent Extraction)~~ [ĐÃ HOÀN THÀNH Ở PHASE 7]
 - **Vấn đề**: Hiện tại đẩy nguyên cục text dài vào Flash.
-- **Giải pháp**: Tách text PDF theo từng trang (hoặc từng cụm 2-3 trang). Sử dụng `asyncio.gather()` ở Backend để gọi API `gemini-flash` **song song** (Concurrent). 
-- **Lợi ích**: Dù đề thi có 10 trang hay 100 trang, thời gian nhận diện sườn đề sẽ được rút ngắn xuống chỉ bằng thời gian nhận diện 1 trang (khoảng 5 - 10 giây)!
+- **Giải pháp**: Tách text PDF theo từng trang (hoặc từng cụm 2-3 trang). Sử dụng `asyncio.gather()` ở Backend để gọi API `gemini-1.5-flash` **song song** (Concurrent). 
+- **Lợi ích**: Dù đề thi có 10 trang hay 100 trang, thời gian nhận diện sườn đề sẽ được rút ngắn đáng kể!
 
 ### 2. Tối giản cấu trúc Prompt JSON
 - Ép LLM trả về cấu trúc JSON rút gọn nhất có thể. Càng ít chữ (token) được sinh ra, tốc độ API trả về càng nhanh.
@@ -18,8 +18,8 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 - Hiện tại đang chờ giải xong 5 câu đầu tiên rồi mới trả kết quả về Mobile. 
 - Có thể giảm xuống chỉ chờ giải xong **1 hoặc 2 câu đầu**, phần còn lại đưa vào Background. Thời gian chờ sẽ giảm thêm được 10 giây nữa.
 
-### 4. Cải thiện UI (Real-time Feedback)
-- Thay vì Mobile hiện một vòng xoay Loading nhàm chán suốt 1 phút, Backend có thể trả về tiến trình (Server-Sent Events / WebSocket) để Mobile hiển thị: *"Đang phân tích trang 1/10...", "Đang phân tích trang 5/10..."*. Tạo cảm giác nhanh và an tâm cho người dùng.
+### ~~4. Cải thiện UI (Real-time Feedback)~~ [ĐÃ HOÀN THÀNH Ở PHASE 7]
+- Thay vì Mobile hiện một vòng xoay Loading nhàm chán suốt 1 phút, Backend đã được nâng cấp để trả về Server-Sent Events (SSE). Mobile hiển thị từng câu hỏi được trích xuất theo thời gian thực giống như hiệu ứng stream, tạo cảm giác mượt mà và an tâm cho người dùng.
 
 ### 5. Xây dựng "Ngân hàng Câu hỏi" (Global Question Bank / AI Caching)
 - **Ý tưởng nâng cao**: Khi người dùng A upload một đề và AI đã giải xong, câu hỏi cùng lời giải đó sẽ được lưu vào một thư viện chung (Question Bank / Vector DB) thông qua thuật toán băm (Hashing) hoặc nhúng vector (Embeddings).
@@ -56,12 +56,10 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
   - Nếu file đó đang được AI giải rồi (trạng thái `Processing`), 49 học sinh đăng sau sẽ được đưa vào một Hàng đợi (Queue/PubSub) để "chờ ké" kết quả.
   - Ngay khi AI giải xong cho người đầu tiên, kết quả sẽ được Broadcast (Phát sóng) trả về ngay lập tức cho 49 người còn lại mà không tốn thêm bất kỳ một đồng tiền Token nào!
 
-### 12. Chống ngợp Token ở khâu Bóc tách (Extraction Chunking & Pagination)
-- **Vấn đề**: Mặc dù khâu "Giải đề" đã được băm nhỏ thành các cụm 5 câu, nhưng khâu "Bóc tách cấu trúc ban đầu" (Dùng `gemini-flash`) vẫn đang phải nạp TOÀN BỘ văn bản PDF vào cùng 1 lúc. Nếu đề thi dài 50 trang (ví dụ đề IELTS, TOEIC), số lượng Token đầu vào (Input) và độ dài file JSON trả về (Output) chắc chắn sẽ vượt ngưỡng giới hạn vật lý của Google Gemini (thường là 8192 output tokens), làm cháy Quota hoặc đứt gãy file JSON.
-- **Giải pháp**: Xử lý băm nhỏ ngay từ lúc đọc PDF (Pagination).
-  - Tách PDF thành từng cụm trang (Ví dụ: 3 trang / 1 chunk).
-  - Gửi song song (Concurrent) nhiều request đến `gemini-flash` để bóc tách từng cụm trang đó thành các mảng JSON nhỏ.
-  - Sau đó Backend sẽ làm nhiệm vụ "Gộp" (Merge) các mảng JSON này lại thành một JSON tổng duy nhất. Cách này vừa lách được Token Limit, vừa tăng tốc độ xử lý nhờ chạy song song!
+### ~~12. Chống ngợp Token ở khâu Bóc tách (Extraction Chunking & Pagination)~~ [ĐÃ HOÀN THÀNH Ở PHASE 7]
+- **Giải pháp đã triển khai**: Xử lý băm nhỏ ngay từ lúc đọc PDF (Pagination) kết hợp Semaphore giới hạn Rate Limit.
+  - Tách PDF thành từng cụm.
+  - Gửi song song (Concurrent) nhiều request đến `gemini-1.5-flash` để bóc tách từng cụm trang đó thành các mảng JSON nhỏ. Tự động trả về qua SSE. Lách được Token Limit và tăng tốc độ nhờ chạy song song.
 
 ### 13. Hệ thống Tài khoản & Gói cước (Auth & Monetization)
 - **Ý tưởng**: Xây dựng mô hình kinh doanh cho ứng dụng với hệ thống Người dùng Miễn phí (Free) và Trả phí (Premium/Pro).

@@ -25,6 +25,8 @@ class Question {
   final List<Answer> answers;
   final String? correctAnswerId;
   final String? explanation;
+  final String? sharedContext;
+  final String? imageBase64;
 
   Question({
     required this.id,
@@ -32,6 +34,8 @@ class Question {
     required this.answers,
     this.correctAnswerId,
     this.explanation,
+    this.sharedContext,
+    this.imageBase64,
   });
 
   factory Question.fromJson(Map<String, dynamic> json) {
@@ -41,6 +45,8 @@ class Question {
       answers: (json['answers'] as List).map((e) => Answer.fromJson(e)).toList(),
       correctAnswerId: json['correct_answer_id'],
       explanation: json['explanation'],
+      sharedContext: json['shared_context'],
+      imageBase64: json['image_base64'],
     );
   }
 }
