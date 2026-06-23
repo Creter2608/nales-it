@@ -16,7 +16,7 @@ async def connect_to_mongo():
     try:
         db.client = motor.motor_asyncio.AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=2000)
         await db.client.server_info() # Kiểm tra kết nối nhanh
-        db.db = db.client.nales_it
+        db.db = db.client[settings.DATABASE_NAME]
         logger.info("Kết nối MongoDB thành công!")
     except Exception as e:
         logger.warning("Không thể kết nối MongoDB. Hệ thống sẽ tự động chuyển sang chế độ Mock DB (Bộ nhớ tạm).")

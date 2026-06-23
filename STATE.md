@@ -1,20 +1,27 @@
-# Nales-It: Project State
+# Nales-It Backend State
 
 ## Current Architecture
-- **Core Engine**: FastAPI backend that converts PDFs to Quizzes using LLM (OpenAI API spec, running via LM Studio or Gemini API).
-- **Frontend**: Flutter + Riverpod, consuming SSE (Server-Sent Events) for real-time progressive UI updates.
-- **Database**: MongoDB.
+- **Framework**: FastAPI (Python 3.11+)
+- **Database**: MongoDB (via Motor async) with a fallback to in-memory MockDB.
+- **AI Integration**: LangChain connecting to either LM Studio (Local LLM - default google/gemma-4-e4b) or Gemini (cloud).
+- **Core Features**: 
+  - Upload PDF, extract text/images (PyMuPDF) -> AI processes to generate Multiple Choice Questions.
+  - Streaming SSE to client during AI processing.
+  - Background tasks for solving chunks of questions.
+  - In-memory rate limiting and API Key authentication middleware.
+- **Modules Breakdown (Refactored)**: `llm_utils.py`, `quiz_solver.py`, `quiz_grader.py`, `quiz_extractor.py` and a facade `quiz_generator.py`.
 
-## Completed Tasks (Just Finished)
-- **Resolved "Infinite Loading" loop**: Handled `asyncio.CancelledError` in `upload.py` to properly cancel background LM generation tasks when the client disconnects from the SSE stream, preventing LM Studio queue blockages.
-- **Enabled Structured Output**: Refactored `quiz_generator.py` to entirely eliminate Regex (Markdown) parsing. The system now enforces strict JSON Schema (via `response_format={"type": "json_schema"}`) on all generation and reasoning steps.
-- **Parser Robustness**: Upgraded parsing logic to use `json_repair` and robust JSON array slicing `[...]` to gracefully handle any stray `<think>` tags or markdown wrappers.
+## Completed Tasks
+- **Phase 1 (Critical Fixes)**: Fixed `obj_id` undefined NameError, missing imports (`random`, `string`) in `upload.py`, removed exposed `GEMINI_API_KEY` from `.env`, and fixed variable shadowing in the background chunk solver loop.
+- **Phase 2 (Security Hardening)**: Restricted CORS default to `localhost:3000, localhost:8080`, unhardcoded `DATABASE_NAME` in `mongodb.py`, fixed gate logic mismatch with `ai_enabled` property, and introduced `API_KEY` based authentication middleware (`X-API-Key`).
+- **Phase 3 (Architecture & Quality)**: Split the monolithic `quiz_generator.py` (549 lines) into 4 specialized modules with a backward-compatible facade. Cleaned up unused imports. Added 23 comprehensive Pytest unit tests. Implemented simple in-memory rate limiting (5 reqs/60s) for the `/api/v1/upload/pdf` endpoint.
 
 ## Pending Tasks / Known Bugs
-- Test new Structured Output stability with LM Studio local models in practice.
-- Proceed to implement "Ngân hàng Câu hỏi" (Question Bank) to reuse parsing results and achieve 0-second load times.
+- Add integration tests for the endpoints.
+- Replace simple in-memory rate limiting with Redis if deploying horizontally (multiple workers).
+- Wire up frontend to consume the `X-API-Key` securely in production.
+- (Optional) Revoke the old Gemini API Key on Google AI Studio as it was previously leaked.
 
 ## Running Services
-- `cd backend` -> `uvicorn app.main:app --reload` (Port 8000)
-- `cd mobile` -> `flutter run`
-- LM Studio running local model on Port 1234.
+- **Backend API**: `poetry run uvicorn app.main:app --reload` (Runs on `http://localhost:8000`)
+- **Tests**: `poetry run pytest tests/test_unit.py -v`

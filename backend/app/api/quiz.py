@@ -1,5 +1,5 @@
 import logging
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from bson.objectid import ObjectId
 from pydantic import BaseModel
 from typing import Dict
@@ -9,9 +9,10 @@ from app.db.mongodb import get_database
 from app.db.mock import get_mock_quiz, set_mock_quiz
 from app.schemas.quiz import Quiz
 from app.core.config import settings
+from app.core.auth import verify_api_key
 
 logger = logging.getLogger(__name__)
-quiz_router = APIRouter(prefix="/quiz", tags=["quiz"])
+quiz_router = APIRouter(prefix="/quiz", tags=["quiz"], dependencies=[Depends(verify_api_key)])
 
 @quiz_router.get("/{quiz_id}", response_model=Quiz)
 async def get_quiz(quiz_id: str):
@@ -90,8 +91,8 @@ async def grade_quiz(request: GradeRequest):
             })
             
     # Send to AI for feedback
-    if not settings.GEMINI_API_KEY:
-        feedback = "API Key is not configured, cannot generate feedback."
+    if not settings.ai_enabled:
+        feedback = "No AI backend configured, cannot generate feedback."
     else:
         from app.services.quiz_generator import generate_feedback
         feedback = await generate_feedback(score, total, wrong_questions)
@@ -135,6 +136,7 @@ async def resolve_question(request: ResolveRequest):
         
         # Save back
         if db is not None:
+            obj_id = ObjectId(request.quiz_id)
             await db["quizzes"].replace_one({"_id": obj_id}, quiz_data)
         else:
             set_mock_quiz(request.quiz_id, quiz_data)
