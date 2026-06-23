@@ -11,6 +11,7 @@ class QuizState {
   final bool isSubmitted;
   final AsyncValue<Map<String, dynamic>?> gradeResult;
   final bool isStreaming;
+  final String? progressMessage;
 
   QuizState({
     this.quiz = const AsyncLoading(),
@@ -20,6 +21,7 @@ class QuizState {
     this.isSubmitted = false,
     this.gradeResult = const AsyncData(null),
     this.isStreaming = false,
+    this.progressMessage,
   });
 
   QuizState copyWith({
@@ -30,6 +32,7 @@ class QuizState {
     bool? isSubmitted,
     AsyncValue<Map<String, dynamic>?>? gradeResult,
     bool? isStreaming,
+    String? progressMessage,
   }) {
     return QuizState(
       quiz: quiz ?? this.quiz,
@@ -39,6 +42,7 @@ class QuizState {
       isSubmitted: isSubmitted ?? this.isSubmitted,
       gradeResult: gradeResult ?? this.gradeResult,
       isStreaming: isStreaming ?? this.isStreaming,
+      progressMessage: progressMessage ?? this.progressMessage,
     );
   }
 }
@@ -76,6 +80,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
   void startStreamingQuiz(Stream<Map<String, dynamic>> stream) {
     state = state.copyWith(
       isStreaming: true,
+      progressMessage: "Đang phân tích định dạng văn bản...",
       quiz: AsyncData(Quiz(title: "Đang xử lý PDF...", questions: [])),
     );
 
@@ -97,7 +102,10 @@ class QuizNotifier extends StateNotifier<QuizState> {
               questions: [...currentQuiz.questions, ...newQuestions],
             ),
           ),
+          progressMessage: "Đã trích xuất ${currentQuiz.questions.length + newQuestions.length} câu hỏi...",
         );
+      } else if (type == 'progress') {
+        state = state.copyWith(progressMessage: event['message']);
       } else if (type == 'images_mapped') {
         final updates = event['updates'] as List;
         final updateMap = {for (var u in updates) u['id'].toString(): u['image_base64']};
@@ -176,6 +184,10 @@ class QuizNotifier extends StateNotifier<QuizState> {
         isStreaming: false,
         quiz: AsyncError(error, StackTrace.current),
       );
+    }, onDone: () {
+      if (state.isStreaming) {
+        state = state.copyWith(isStreaming: false);
+      }
     });
   }
 

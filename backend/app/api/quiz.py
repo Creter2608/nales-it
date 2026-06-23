@@ -3,7 +3,6 @@ from fastapi import APIRouter, HTTPException
 from bson.objectid import ObjectId
 from pydantic import BaseModel
 from typing import Dict
-from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
 from app.db.mongodb import get_database

@@ -224,13 +224,13 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           if (quizState.isStreaming) {
             return Scaffold(
               appBar: AppBar(title: Text(quiz.title), backgroundColor: Colors.blue, foregroundColor: Colors.white),
-              body: const Center(
+              body: Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: Colors.blue),
-                    SizedBox(height: 16),
-                    Text('Đang phân tích PDF và tải câu hỏi...', style: TextStyle(color: Colors.grey, fontSize: 16)),
+                    const CircularProgressIndicator(color: Colors.blue),
+                    const SizedBox(height: 16),
+                    Text(quizState.progressMessage ?? 'Đang tải...', style: const TextStyle(color: Colors.grey, fontSize: 16)),
                   ],
                 ),
               ),

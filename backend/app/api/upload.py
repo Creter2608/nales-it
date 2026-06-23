@@ -84,39 +84,68 @@ async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(
     async def event_generator():
         try:
             logger.info(f"Received file: {file.filename}")
-            chunks = await extract_text_from_pdf(file)
+            chunks, image_mapping = await extract_text_from_pdf(file)
             
             logger.info(f"Started SSE stream from {len(chunks)} chunk(s)...")
             from app.services.quiz_generator import stream_quiz_from_pdf
             
-            async for event in stream_quiz_from_pdf(chunks, file=file):
-                if event["type"] == "done":
-                    # Save to Database
-                    quiz_data = event.pop("quiz_data")
-                    remaining_unsolved = event.pop("unsolved")
+            queue = asyncio.Queue()
+            
+            async def run_generator():
+                try:
+                    async for ev in stream_quiz_from_pdf(chunks, image_mapping, file=file):
+                        await queue.put(ev)
+                except Exception as e:
+                    import traceback
+                    logger.error(traceback.format_exc())
+                    await queue.put({"type": "error", "detail": "Lỗi trong quá trình AI phân tích. Vui lòng thử lại."})
+                finally:
+                    await queue.put(None)
                     
-                    from app.db.mongodb import get_database
-                    db = get_database()
-                    quiz_id = None
-                    if db is not None:
-                        result = await db["quizzes"].insert_one(quiz_data)
-                        quiz_id = str(result.inserted_id)
+            # Bắt đầu chạy generator ở chế độ ngầm
+            generator_task = asyncio.create_task(run_generator())
+            
+            try:
+                while True:
+                    try:
+                        # Timeout every 15s to send a heartbeat (progress) without killing the generator
+                        event = await asyncio.wait_for(queue.get(), timeout=15.0)
+                        if event is None:
+                            break
+                    except asyncio.TimeoutError:
+                        yield f"data: {json.dumps({'type': 'progress', 'message': 'Đang đợi AI phân tích dữ liệu...'}, ensure_ascii=False)}\n\n"
+                        continue
+
+                    if event["type"] == "done":
+                        # Save to Database
+                        quiz_data = event.pop("quiz_data")
+                        remaining_unsolved = event.pop("unsolved")
+                        
+                        from app.db.mongodb import get_database
+                        db = get_database()
+                        quiz_id = None
+                        if db is not None:
+                            result = await db["quizzes"].insert_one(quiz_data)
+                            quiz_id = str(result.inserted_id)
+                        else:
+                            quiz_id = "local_" + "".join(random.choices(string.ascii_letters + string.digits, k=10))
+                            from app.db.mock import set_mock_quiz
+                            quiz_data["id"] = quiz_id
+                            set_mock_quiz(quiz_id, quiz_data)
+                            
+                        event["quiz_id"] = quiz_id
+                        
+                        # Trigger Background Task
+                        if remaining_unsolved:
+                            background_tasks.add_task(background_solve_chunking, quiz_id, remaining_unsolved)
+                            
+                        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                     else:
-                        import uuid
-                        quiz_id = str(uuid.uuid4())
-                        from app.db.mock import set_mock_quiz
-                        quiz_data["id"] = quiz_id
-                        set_mock_quiz(quiz_id, quiz_data)
-                        
-                    event["quiz_id"] = quiz_id
-                    
-                    # Trigger Background Task
-                    if remaining_unsolved:
-                        background_tasks.add_task(background_solve_chunking, quiz_id, remaining_unsolved)
-                        
-                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
-                else:
-                    yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+                        yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
+            except asyncio.CancelledError:
+                logger.warning("Client disconnected from SSE stream! Cancelling background LLM generation...")
+                generator_task.cancel()
+                raise
                     
         except Exception as e:
             import traceback

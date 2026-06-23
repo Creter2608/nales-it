@@ -344,58 +344,58 @@ Các task đã được lưu vào list `tasks` (tốt), nhưng nếu exception x
 
 ### Phase 1: Critical Fixes (Ưu tiên cao nhất)
 
-#### [MODIFY] [mongodb.py](file:///d:/Nales-It/nales-it/backend/app/db/mongodb.py)
+#### ✅ [DONE] [MODIFY] [mongodb.py](file:///d:/Nales-It/nales-it/backend/app/db/mongodb.py)
 - Dùng `settings.MONGODB_URI` thay vì hardcoded URL
 
-#### [MODIFY] [main.py](file:///d:/Nales-It/nales-it/backend/app/main.py)
+#### ✅ [DONE] [MODIFY] [main.py](file:///d:/Nales-It/nales-it/backend/app/main.py)
 - Thu hẹp CORS (ít nhất dùng env config cho allowed origins)
 
-#### Verify `.env` Git history
+#### ✅ [DONE] Verify `.env` Git history
 - Kiểm tra xem `.env` đã từng được commit chưa, nếu có thì xóa khỏi history
 
 ---
 
 ### Phase 2: Required Fixes (Correctness & Security)
 
-#### [MODIFY] [quiz_generator.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator.py)
+#### ✅ [DONE] [MODIFY] [quiz_generator.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator.py)
 - Fix `_parse_json_from_text` return type annotation → `dict | list`
 - Wrap `solve_quiz_questions` result: `if isinstance(result, dict): result = [result]`
 - Remove unused `Tuple` import
 - Extract LLM instances thành module-level singletons
 
-#### [MODIFY] [upload.py](file:///d:/Nales-It/nales-it/backend/app/api/upload.py)
+#### ✅ [DONE] [MODIFY] [upload.py](file:///d:/Nales-It/nales-it/backend/app/api/upload.py)
 - Thêm file size/type validation
 - Sanitize error messages trước khi gửi qua SSE
 
-#### [MODIFY] [pdf_extractor.py](file:///d:/Nales-It/nales-it/backend/app/services/pdf_extractor.py)
+#### ✅ [DONE] [MODIFY] [pdf_extractor.py](file:///d:/Nales-It/nales-it/backend/app/services/pdf_extractor.py)
 - Sanitize `file.filename` trước khi dùng trong path
 
-#### [MODIFY] [quiz.py (API)](file:///d:/Nales-It/nales-it/backend/app/api/quiz.py)
+#### ✅ [DONE] [MODIFY] [quiz.py (API)](file:///d:/Nales-It/nales-it/backend/app/api/quiz.py)
 - Extract `_get_quiz_data()` helper cho duplicated lookup pattern
 
-#### [MODIFY] [quiz_screen.dart](file:///d:/Nales-It/nales-it/mobile/lib/features/quiz/presentation/quiz_screen.dart)
+#### ✅ [DONE] [MODIFY] [quiz_screen.dart](file:///d:/Nales-It/nales-it/mobile/lib/features/quiz/presentation/quiz_screen.dart)
 - Thêm `dispose()` để cleanup `_pageController`
 
-#### [MODIFY] [quiz_state.dart](file:///d:/Nales-It/nales-it/mobile/lib/features/quiz/presentation/quiz_state.dart)
+#### ✅ [DONE] [MODIFY] [quiz_state.dart](file:///d:/Nales-It/nales-it/mobile/lib/features/quiz/presentation/quiz_state.dart)
 - Lưu `StreamSubscription` và cancel trong destructor
 
-#### [DELETE] [quiz_generator_backup.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator_backup.py)
+#### ✅ [DONE] [DELETE] [quiz_generator_backup.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator_backup.py)
 - Dead code, 39KB UTF-16 LE
 
 ---
 
 ### Phase 3: Optimization & Polish
 
-#### [MODIFY] [quiz_generator.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator.py)
+#### ✅ [DONE] [MODIFY] [quiz_generator.py](file:///d:/Nales-It/nales-it/backend/app/services/quiz_generator.py)
 - Tối ưu `_map_images_to_questions` — batch images thay vì gửi tất cả 1 lúc
 
-#### [MODIFY] [quiz.py (API)](file:///d:/Nales-It/nales-it/backend/app/api/quiz.py)
+#### ✅ [DONE] [MODIFY] [quiz.py (API)](file:///d:/Nales-It/nales-it/backend/app/api/quiz.py)
 - Move AI logic từ `grade_quiz` endpoint vào service layer
 
-#### [MODIFY] [upload.py](file:///d:/Nales-It/nales-it/backend/app/api/upload.py)
+#### ✅ [DONE] [MODIFY] [upload.py](file:///d:/Nales-It/nales-it/backend/app/api/upload.py)
 - Dùng atomic `$set` thay vì `replace_one` trong background task
 
-#### [NEW] Backend: Endpoint `/quiz/{id}/question/{idx}`
+#### ✅ [DONE] [NEW] Backend: Endpoint `/quiz/{id}/question/{idx}`
 - Cho phép mobile fetch từng câu hỏi thay vì toàn bộ quiz
 
 ---
