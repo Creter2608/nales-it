@@ -12,6 +12,12 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 > - Xử lý ngắt kết nối thông minh (Orphaned Task Cancellation) tránh "đốt" tiền API Gemini khi user thoát ngang.
 > - An toàn Database với kết nối an toàn và chặn lỗ hổng ghi đè dữ liệu cục bộ bằng Atomic Update `$set`.
 
+> **[CẬP NHẬT PHASE 9 - Tái cấu trúc Backend & Hardening]**:
+> - Đã chia tách monolith `quiz_generator.py` thành 4 module chuyên biệt.
+> - Phủ 100% Pytest (23 tests) cho các logic lõi (schemas, utils, config, auth).
+> - Triển khai API Key Auth Middleware và In-memory Rate Limiting cho luồng Upload.
+> - Đã vá sạch các lỗi Critical (thiếu import gây crash Mock DB, sửa lọt biến vòng lặp băm chunk, giấu file `.env`).
+
 ### ~~1. Băm nhỏ quá trình đọc PDF (Concurrent Extraction)~~ [ĐÃ HOÀN THÀNH Ở PHASE 7]
 - **Vấn đề**: Hiện tại đẩy nguyên cục text dài vào Flash.
 - **Giải pháp**: Tách text PDF theo từng trang (hoặc từng cụm 2-3 trang). Sử dụng `asyncio.gather()` ở Backend để gọi API `gemini-1.5-flash` **song song** (Concurrent). 
