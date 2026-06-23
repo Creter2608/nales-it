@@ -204,6 +204,12 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   }
 
   @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final quizState = ref.watch(quizStateProvider(widget.quizId));
 

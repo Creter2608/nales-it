@@ -11,7 +11,8 @@ db = Database()
 
 async def connect_to_mongo():
     logger.info("Đang kết nối tới MongoDB...")
-    mongo_url = "mongodb://localhost:27017" # Dùng localhost cho môi trường phát triển cục bộ
+    from app.core.config import settings
+    mongo_url = settings.MONGODB_URI
     try:
         db.client = motor.motor_asyncio.AsyncIOMotorClient(mongo_url, serverSelectionTimeoutMS=2000)
         await db.client.server_info() # Kiểm tra kết nối nhanh

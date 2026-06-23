@@ -6,6 +6,7 @@ class Settings(BaseSettings):
     DATABASE_NAME: str = "nales_it"
     OPENAI_API_KEY: str = ""
     GEMINI_API_KEY: str = ""
+    ALLOWED_ORIGINS: str = "*" # Comma-separated list of origins, or *
 
     class Config:
         env_file = ".env"

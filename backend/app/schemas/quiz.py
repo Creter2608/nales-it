@@ -2,19 +2,19 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 class Answer(BaseModel):
-    id: str = Field(..., description="ID của đáp án, ví dụ: 'A', 'B', 'C', 'D'")
-    content: str = Field(..., description="Nội dung của đáp án")
+    id: str = Field(..., description="Answer ID, e.g., 'A', 'B', 'C', 'D'")
+    content: str = Field(..., description="Content of the answer")
 
 class Question(BaseModel):
-    id: str = Field(..., description="ID của câu hỏi, ví dụ: '1', '2', '3'")
-    content: str = Field(..., description="Nội dung câu hỏi")
-    answers: List[Answer] = Field(..., description="Danh sách các đáp án (A, B, C, D)")
-    correct_answer_id: Optional[str] = Field(None, description="ID của đáp án đúng. Có thể null nếu không có đáp án.")
-    explanation: Optional[str] = Field(None, description="Giải thích tại sao lại chọn đáp án này. Có thể null.")
-    shared_context: Optional[str] = Field(None, description="Thông tin dùng chung cho một cụm câu hỏi.")
-    image_base64: Optional[str] = Field(None, description="Ảnh đính kèm cho câu hỏi dưới dạng chuỗi base64.")
+    id: str = Field(..., description="Question ID, e.g., '1', '2', '3'")
+    content: str = Field(..., description="Content of the question")
+    answers: List[Answer] = Field(..., description="List of available answers (A, B, C, D)")
+    correct_answer_id: Optional[str] = Field(None, description="ID of the correct answer. Null if no answer is provided.")
+    explanation: Optional[str] = Field(None, description="Explanation for the correct answer. Null if not provided.")
+    shared_context: Optional[str] = Field(None, description="Shared context or passage for a group of questions.")
+    image_base64: Optional[str] = Field(None, description="Base64 string of the attached image for this question.")
 
 class Quiz(BaseModel):
-    id: Optional[str] = Field(None, description="ID của bài trắc nghiệm trong database (MongoDB Object ID)")
-    title: str = Field(..., description="Tiêu đề của bài trắc nghiệm")
-    questions: List[Question] = Field(..., description="Danh sách các câu hỏi")
+    id: Optional[str] = Field(None, description="Database ID of the quiz (MongoDB Object ID)")
+    title: str = Field(..., description="Title of the quiz")
+    questions: List[Question] = Field(..., description="List of questions in the quiz")

@@ -7,41 +7,57 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_core.prompts import PromptTemplate
 
 from app.db.mongodb import get_database
+from app.db.mock import get_mock_quiz, set_mock_quiz
 from app.schemas.quiz import Quiz
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 quiz_router = APIRouter(prefix="/quiz", tags=["quiz"])
 
-MOCK_QUIZ_DB = {} # Dictionary lưu trữ tạm thời nếu MongoDB không hoạt động
-
 @quiz_router.get("/{quiz_id}", response_model=Quiz)
 async def get_quiz(quiz_id: str):
     """
-    Lấy thông tin một bài Quiz đã lưu từ MongoDB hoặc Mock DB
+    Get quiz information from MongoDB or Mock DB.
     """
+    quiz_data = await _get_quiz_data(quiz_id)
+    quiz_data["id"] = str(quiz_data.get("_id", quiz_data.get("id")))
+    return Quiz(**quiz_data)
+
+@quiz_router.get("/{quiz_id}/question/{idx}")
+async def get_quiz_question(quiz_id: str, idx: int):
+    """
+    Get a specific question by index from the quiz.
+    Useful to avoid re-fetching the entire quiz.
+    """
+    quiz_data = await _get_quiz_data(quiz_id)
+    questions = quiz_data.get("questions", [])
+    if idx < 0 or idx >= len(questions):
+        raise HTTPException(status_code=404, detail="Question not found at this index.")
+    return questions[idx]
+
+async def _get_quiz_data(quiz_id: str) -> dict:
     db = get_database()
     if db is None:
-        if quiz_id in MOCK_QUIZ_DB:
-            return Quiz(**MOCK_QUIZ_DB[quiz_id])
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+        quiz_data = get_mock_quiz(quiz_id)
+        if not quiz_data:
+            raise HTTPException(status_code=404, detail="Quiz not found.")
+        return quiz_data
         
     try:
         obj_id = ObjectId(quiz_id)
     except Exception:
-        raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
+        raise HTTPException(status_code=400, detail="Invalid Quiz ID.")
         
     quiz_data = await db["quizzes"].find_one({"_id": obj_id})
     if not quiz_data:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+        raise HTTPException(status_code=404, detail="Quiz not found.")
         
-    quiz_data["id"] = str(quiz_data["_id"])
-    return Quiz(**quiz_data)
+    return quiz_data
 
 
 class GradeRequest(BaseModel):
     quiz_id: str
-    user_answers: Dict[str, str] # Map từ question_id -> answer_id
+    user_answers: Dict[str, str] # Map from question_id -> answer_id
 
 class GradeResponse(BaseModel):
     score: int
@@ -51,26 +67,14 @@ class GradeResponse(BaseModel):
 @quiz_router.post("/grade", response_model=GradeResponse)
 async def grade_quiz(request: GradeRequest):
     """
-    Chấm điểm bài làm và gọi AI để nhận xét tổng quan
+    Grade the quiz and call AI for overall feedback.
     """
-    db = get_database()
-    if db is None:
-        if request.quiz_id in MOCK_QUIZ_DB:
-            quiz_data = MOCK_QUIZ_DB[request.quiz_id]
-        else:
-            raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
-    else:
-        try:
-            obj_id = ObjectId(request.quiz_id)
-        except Exception:
-            raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
-        quiz_data = await db["quizzes"].find_one({"_id": obj_id})
-    if not quiz_data:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+    quiz_data = await _get_quiz_data(request.quiz_id)
+    quiz_data["id"] = str(quiz_data.get("_id", quiz_data.get("id")))
         
     quiz = Quiz(**quiz_data)
     
-    # Tính điểm thủ công nếu câu hỏi có correct_answer_id
+    # Calculate score manually
     score = 0
     total = len(quiz.questions)
     wrong_questions = []
@@ -86,40 +90,12 @@ async def grade_quiz(request: GradeRequest):
                 "correct_was": q.correct_answer_id
             })
             
-    # Gửi cho AI nhận xét
+    # Send to AI for feedback
     if not settings.GEMINI_API_KEY:
-        feedback = "Chưa cấu hình API Key nên không thể tạo nhận xét."
+        feedback = "API Key is not configured, cannot generate feedback."
     else:
-        llm = ChatGoogleGenerativeAI(
-            model="gemini-flash-latest", 
-            google_api_key=settings.GEMINI_API_KEY,
-            temperature=0.7,
-        )
-        prompt = PromptTemplate(
-            input_variables=["score", "total", "wrong_list"],
-            template="""
-Học sinh vừa làm xong bài kiểm tra và đạt {score}/{total} điểm.
-Danh sách các câu học sinh làm sai:
-{wrong_list}
-
-Với tư cách là một gia sư AI thân thiện, hãy viết một đoạn nhận xét ngắn gọn (khoảng 3-4 câu) để:
-1. Khen ngợi sự cố gắng.
-2. Chỉ ra điểm yếu chung dựa trên các câu làm sai (nếu có).
-3. Động viên học sinh.
-Không cần giải chi tiết từng câu, chỉ nhận xét tổng quan.
-"""
-        )
-        chain = prompt | llm
-        wrong_list_str = "\n".join([f"- Câu: {w['question']} | Chọn sai: {w['user_chose']} | Đáp án đúng: {w['correct_was']}" for w in wrong_questions])
-        if not wrong_list_str:
-            wrong_list_str = "Học sinh làm đúng 100%!"
-            
-        try:
-            res = await chain.ainvoke({"score": score, "total": total, "wrong_list": wrong_list_str})
-            feedback = res.content
-        except Exception as e:
-            logger.error(f"Lỗi khi gọi AI chấm bài: {e}")
-            feedback = "Rất tiếc, AI đang bận nên không thể đưa ra nhận xét lúc này."
+        from app.services.quiz_generator import generate_feedback
+        feedback = await generate_feedback(score, total, wrong_questions)
             
     return GradeResponse(score=score, total=total, ai_feedback=feedback)
 
@@ -130,26 +106,13 @@ class ResolveRequest(BaseModel):
 @quiz_router.post("/resolve")
 async def resolve_question(request: ResolveRequest):
     """
-    Giải lại 1 câu hỏi cụ thể theo yêu cầu của học sinh (Cờ đỏ 🚩)
+    Resolve a specific question per student request (Red flag 🚩).
     """
     db = get_database()
-    # Tìm Quiz
-    if db is None:
-        if request.quiz_id in MOCK_QUIZ_DB:
-            quiz_data = MOCK_QUIZ_DB[request.quiz_id]
-        else:
-            raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
-    else:
-        try:
-            obj_id = ObjectId(request.quiz_id)
-            quiz_data = await db["quizzes"].find_one({"_id": obj_id})
-        except Exception:
-            raise HTTPException(status_code=400, detail="ID Quiz không hợp lệ.")
-            
-    if not quiz_data:
-        raise HTTPException(status_code=404, detail="Không tìm thấy bài Quiz.")
+    # Find Quiz
+    quiz_data = await _get_quiz_data(request.quiz_id)
 
-    # Tìm Question
+    # Find Question
     target_q = None
     for q in quiz_data["questions"]:
         if str(q["id"]) == request.question_id:
@@ -157,7 +120,7 @@ async def resolve_question(request: ResolveRequest):
             break
             
     if not target_q:
-        raise HTTPException(status_code=404, detail="Không tìm thấy câu hỏi.")
+        raise HTTPException(status_code=404, detail="Question not found.")
         
     from app.services.quiz_generator import resolve_single_question
     
@@ -175,9 +138,9 @@ async def resolve_question(request: ResolveRequest):
         if db is not None:
             await db["quizzes"].replace_one({"_id": obj_id}, quiz_data)
         else:
-            MOCK_QUIZ_DB[request.quiz_id] = quiz_data
+            set_mock_quiz(request.quiz_id, quiz_data)
             
         return {"status": "success", "new_answer": target_q["correct_answer_id"], "new_explanation": target_q["explanation"]}
     except Exception as e:
-        logger.error(f"Lỗi giải lại câu hỏi: {e}")
-        raise HTTPException(status_code=500, detail="Không thể giải lại câu hỏi lúc này.")
+        logger.error(f"Error re-solving question: {e}")
+        raise HTTPException(status_code=500, detail="Cannot resolve question at this time.")

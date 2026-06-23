@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import '../data/upload_repository.dart';
 
-final uploadStateProvider = StateNotifierProvider<UploadNotifier, AsyncValue<Map<String, dynamic>?>>((ref) {
+final uploadStateProvider = StateNotifierProvider.autoDispose<UploadNotifier, AsyncValue<Map<String, dynamic>?>>((ref) {
   return UploadNotifier(ref.watch(uploadRepositoryProvider));
 });
 

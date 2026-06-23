@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/quiz_models.dart';
 import '../data/quiz_repository.dart';
@@ -42,13 +43,20 @@ class QuizState {
   }
 }
 
-final quizStateProvider = StateNotifierProvider.family<QuizNotifier, QuizState, String>((ref, quizId) {
+final quizStateProvider = StateNotifierProvider.family.autoDispose<QuizNotifier, QuizState, String>((ref, quizId) {
   return QuizNotifier(ref.watch(quizRepositoryProvider), quizId);
 });
 
 class QuizNotifier extends StateNotifier<QuizState> {
   final QuizRepository _repository;
   final String quizId;
+  StreamSubscription<Map<String, dynamic>>? _streamSubscription;
+
+  @override
+  void dispose() {
+    _streamSubscription?.cancel();
+    super.dispose();
+  }
 
   QuizNotifier(this._repository, this.quizId) : super(QuizState()) {
     if (quizId != "streaming") {
@@ -71,7 +79,8 @@ class QuizNotifier extends StateNotifier<QuizState> {
       quiz: AsyncData(Quiz(title: "Đang xử lý PDF...", questions: [])),
     );
 
-    stream.listen((event) {
+    _streamSubscription?.cancel();
+    _streamSubscription = stream.listen((event) {
       final type = event['type'];
       final currentQuiz = state.quiz.value;
       if (currentQuiz == null) return;
