@@ -43,4 +43,7 @@ flutter run -d chrome  # hoặc flutter run -d edge
 ```
 
 ## 📝 Nhật ký Phát triển
-Dự án đã hoàn thiện Phase 7 (Cơ chế Progressive Streaming qua Server-Sent Events, Pagination Chunking cho PDF, Giao diện Loading mượt mà trên Mobile, và Xử lý Rate Limit với `gemini-1.5-flash`). Sẵn sàng cho những đợt nâng cấp tiếp theo về Ngân hàng Câu hỏi và Social Features!
+Dự án đã hoàn thiện Phase 7 (Cơ chế Progressive Streaming qua Server-Sent Events, Pagination Chunking cho PDF, Giao diện Loading mượt mà trên Mobile, và Xử lý Rate Limit với `gemini-1.5-flash`).
+**Mới cập nhật:** Đã hoàn tất **Phase 8 - Tối ưu Toàn diện & Sửa lỗi Sâu (Deep Refactoring)**. Xử lý triệt để Event Loop Blocking bằng `asyncio.to_thread`, ngăn rò rỉ RAM (Memory Leaks) bằng `autoDispose` trên Riverpod, chặn gọi thừa API Gemini khi rớt kết nối mạng (Orphaned Task Cancellation), tối ưu băm nhỏ ngữ cảnh hình ảnh (Context Window Overflow) và nâng cấp cấu hình bảo mật Database/CORS.
+
+Sẵn sàng cho những đợt nâng cấp tiếp theo về Ngân hàng Câu hỏi và Social Features!

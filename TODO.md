@@ -6,6 +6,12 @@ Lý do của sự chậm trễ này là do bước **Nhận diện sườn đề
 
 ## 🎯 Các giải pháp cần thực hiện ở Phase tới:
 
+> **[CẬP NHẬT PHASE 8]**: Ở phiên làm việc gần nhất, hệ thống đã được tối ưu cực kỳ chuyên sâu (Deep Refactoring) về kiến trúc:
+> - Giải quyết bài toán treo Backend khi parse PDF bằng cách bọc `opendataloader` và `fitz` vào `asyncio.to_thread`.
+> - Tối ưu vòng đời (Memory Leaks) trên Mobile bằng `autoDispose` cho Riverpod, tự động thu dọn rác bộ nhớ.
+> - Xử lý ngắt kết nối thông minh (Orphaned Task Cancellation) tránh "đốt" tiền API Gemini khi user thoát ngang.
+> - An toàn Database với kết nối an toàn và chặn lỗ hổng ghi đè dữ liệu cục bộ bằng Atomic Update `$set`.
+
 ### ~~1. Băm nhỏ quá trình đọc PDF (Concurrent Extraction)~~ [ĐÃ HOÀN THÀNH Ở PHASE 7]
 - **Vấn đề**: Hiện tại đẩy nguyên cục text dài vào Flash.
 - **Giải pháp**: Tách text PDF theo từng trang (hoặc từng cụm 2-3 trang). Sử dụng `asyncio.gather()` ở Backend để gọi API `gemini-1.5-flash` **song song** (Concurrent). 
