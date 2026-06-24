@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import '../data/upload_repository.dart';
 import '../../quiz/presentation/quiz_state.dart';
 import 'upload_state.dart';
@@ -16,7 +17,7 @@ class UploadScreen extends ConsumerWidget {
       withData: true, 
     );
 
-    if (result != null) {
+    if (result != null && context.mounted) {
       PlatformFile file = result.files.single;
       final repo = ref.read(uploadRepositoryProvider);
       final stream = repo.uploadPdfStream(file);
@@ -123,7 +124,7 @@ class UploadScreen extends ConsumerWidget {
                     onPressed: () => _pickAndUploadFile(ref, context),
                     icon: const Icon(Icons.upload_file, size: 28),
                     label: const Text('Tải file PDF lên'),
-                  );
+                  ).animate(onPlay: (controller) => controller.repeat(reverse: true)).shimmer(duration: 1500.ms, color: Colors.white30);
                 },
                 loading: () => const Column(
                   children: [

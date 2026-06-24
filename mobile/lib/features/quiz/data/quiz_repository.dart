@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../upload/data/upload_repository.dart';
+import '../../../core/network/dio_provider.dart';
+import '../../../core/cache/cache_service.dart';
 import '../domain/quiz_models.dart';
 
 final quizRepositoryProvider = Provider((ref) {
@@ -13,8 +14,20 @@ class QuizRepository {
   QuizRepository(this._dio);
 
   Future<Quiz> getQuiz(String quizId) async {
-    final response = await _dio.get('/api/v1/quiz/$quizId');
-    return Quiz.fromJson(response.data);
+    try {
+      final response = await _dio.get('/api/v1/quiz/$quizId');
+      final quiz = Quiz.fromJson(response.data);
+      // Cache the latest version
+      await CacheService.saveQuiz(quiz);
+      return quiz;
+    } on DioException {
+      // Fallback to cache on network errors
+      final cachedQuiz = CacheService.getQuiz(quizId);
+      if (cachedQuiz != null) {
+        return cachedQuiz;
+      }
+      rethrow;
+    }
   }
 
   Future<Map<String, dynamic>> resolveQuestion(String quizId, String questionId) async {

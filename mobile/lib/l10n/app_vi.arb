@@ -1,0 +1,21 @@
+{
+  "@@locale": "vi",
+  "appTitle": "Nales-It Gia Sư AI",
+  "modeSelectionTitle": "Chọn Chế Độ Làm Bài",
+  "modeInstant": "Ôn luyện",
+  "modeInstantDesc": "Báo màu xanh đỏ ngay khi chọn.",
+  "modeExam": "Thi thử",
+  "modeExamDesc": "Chấm điểm ở cuối giờ.",
+  "modeAi": "Đánh giá AI",
+  "modeAiDesc": "AI nhận xét tổng quan kỹ năng của bạn.",
+  "modePractice": "Tự do",
+  "modePracticeDesc": "Không chấm điểm, chỉ đọc câu hỏi.",
+  "questionGridTitle": "Bảng câu hỏi",
+  "resolveDialogTitle": "Yêu cầu giải lại?",
+  "resolveDialogDesc": "Bạn thấy cấn cấn? Yêu cầu Gia sư AI kiểm tra và giải lại câu này?",
+  "cancel": "Hủy",
+  "resolve": "Giải lại",
+  "resolvingMsg": "Đang yêu cầu AI giải lại...",
+  "resolvedMsg": "Đã cập nhật lời giải mới!",
+  "resolveErrorMsg": "Lỗi: Không thể giải lại lúc này."
+}

@@ -1,27 +1,37 @@
-# Nales-It Backend State
+# Nales-It Project State
 
 ## Current Architecture
-- **Framework**: FastAPI (Python 3.11+)
-- **Database**: MongoDB (via Motor async) with a fallback to in-memory MockDB.
-- **AI Integration**: LangChain connecting to either LM Studio (Local LLM - default google/gemma-4-e4b) or Gemini (cloud).
-- **Core Features**: 
-  - Upload PDF, extract text/images (PyMuPDF) -> AI processes to generate Multiple Choice Questions.
-  - Streaming SSE to client during AI processing.
-  - Background tasks for solving chunks of questions.
-  - In-memory rate limiting and API Key authentication middleware.
-- **Modules Breakdown (Refactored)**: `llm_utils.py`, `quiz_solver.py`, `quiz_grader.py`, `quiz_extractor.py` and a facade `quiz_generator.py`.
+- **Mobile App**: Flutter (Dart 3.x), Feature-First Architecture, Clean Architecture principles.
+- **State Management**: Riverpod 2.x (Notifier/AsyncNotifier).
+- **Routing**: GoRouter.
+- **Data Models**: Freezed + JSON Serializable.
+- **Network**: Dio with Retry Interceptor, SSE streaming support.
+- **Offline Caching**: Hive.
+- **Monitoring**: Sentry (Error tracking and crashes).
+- **Localization**: flutter_localizations + intl.
+- **UI/UX**: Material 3, flutter_animate (micro-animations), skeletonizer (loading states), BouncingScrollPhysics (swiping).
 
 ## Completed Tasks
-- **Phase 1 (Critical Fixes)**: Fixed `obj_id` undefined NameError, missing imports (`random`, `string`) in `upload.py`, removed exposed `GEMINI_API_KEY` from `.env`, and fixed variable shadowing in the background chunk solver loop.
-- **Phase 2 (Security Hardening)**: Restricted CORS default to `localhost:3000, localhost:8080`, unhardcoded `DATABASE_NAME` in `mongodb.py`, fixed gate logic mismatch with `ai_enabled` property, and introduced `API_KEY` based authentication middleware (`X-API-Key`).
-- **Phase 3 (Architecture & Quality)**: Split the monolithic `quiz_generator.py` (549 lines) into 4 specialized modules with a backward-compatible facade. Cleaned up unused imports. Added 23 comprehensive Pytest unit tests. Implemented simple in-memory rate limiting (5 reqs/60s) for the `/api/v1/upload/pdf` endpoint.
+- **Phase 1**: Khảo sát & sửa lỗi cú pháp (cập nhật Riverpod `autoDispose`, sửa lỗi SSE stream listener trong `quiz_state.dart`).
+- **Phase 2**: Chia tách UI Widget lớn thành các file nhỏ (`mode_selection_sheet.dart`, `question_grid_sheet.dart`, `resolve_dialog.dart`, `math_markdown_builder.dart`).
+- **Phase 3**: Nâng cấp hạ tầng: 
+  - Chuyển Data models sang `@freezed`.
+  - Cài đặt `CacheService` (Hive) fallback dữ liệu offline.
+  - Tích hợp `Sentry` catch lỗi.
+  - Chuyển đổi đa ngôn ngữ (i18n) với `AppLocalizations`.
+- **Phase 4**: Tinh chỉnh UI/UX:
+  - Nâng cấp `AppTheme` với `darkTheme` & `lightTheme` hiện đại.
+  - Tích hợp `skeletonizer` mô phỏng skeleton loading lúc chờ AI.
+  - Áp dụng `flutter_animate` cho đáp án, nút nhấn.
+  - Bật cơ chế swipe câu hỏi (chuyển `NeverScrollableScrollPhysics` thành `BouncingScrollPhysics`).
+- **Testing**: Cập nhật lại toàn bộ `unit_test.dart` và `widget_test.dart`. Hiện tại 34/34 test chạy PASS. 0 lỗi Analyzer.
 
 ## Pending Tasks / Known Bugs
-- Add integration tests for the endpoints.
-- Replace simple in-memory rate limiting with Redis if deploying horizontally (multiple workers).
-- Wire up frontend to consume the `X-API-Key` securely in production.
-- (Optional) Revoke the old Gemini API Key on Google AI Studio as it was previously leaked.
+- **Phase 5**: Edge cases handling & Deployment preparation (nếu có).
+- Cần phát triển thêm backend endpoint thực tế cho SSE stream (hiện app có mock stream).
+- Kiểm tra tính ổn định trên thiết bị vật lý thật (iOS/Android).
 
 ## Running Services
-- **Backend API**: `poetry run uvicorn app.main:app --reload` (Runs on `http://localhost:8000`)
-- **Tests**: `poetry run pytest tests/test_unit.py -v`
+- `flutter run` trong thư mục `mobile` để chạy ứng dụng giả lập.
+- Chạy `dart run build_runner watch -d` để theo dõi thay đổi của Freezed và JSON Serializable.
+- Chạy `flutter test` để xác minh trạng thái.

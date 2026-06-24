@@ -1,24 +1,26 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
-import '../data/upload_repository.dart';
 
-final uploadStateProvider = StateNotifierProvider.autoDispose<UploadNotifier, AsyncValue<Map<String, dynamic>?>>((ref) {
-  return UploadNotifier(ref.watch(uploadRepositoryProvider));
+/// Upload state provider.
+///
+/// Tracks whether an upload flow is currently in progress.
+/// The actual streaming logic lives in [UploadScreen._pickAndUploadFile].
+final uploadStateProvider =
+    StateNotifierProvider.autoDispose<UploadNotifier, AsyncValue<Map<String, dynamic>?>>((ref) {
+  return UploadNotifier();
 });
 
 class UploadNotifier extends StateNotifier<AsyncValue<Map<String, dynamic>?>> {
-  final UploadRepository _repository;
+  UploadNotifier() : super(const AsyncData(null));
 
-  UploadNotifier(this._repository) : super(const AsyncData(null));
+  /// Signal that an upload has started.
+  void setLoading() => state = const AsyncLoading();
 
-  Future<void> uploadFile(PlatformFile file) async {
-    state = const AsyncLoading();
-    try {
-      // Not used anymore as we stream directly in UploadScreen, but keeping for compile
-      final stream = _repository.uploadPdfStream(file);
-      state = AsyncData(null);
-    } catch (e, stack) {
-      state = AsyncError(e, stack);
-    }
-  }
+  /// Signal that an upload has completed with a result.
+  void setResult(Map<String, dynamic>? data) => state = AsyncData(data);
+
+  /// Signal that an upload has failed.
+  void setError(Object error, StackTrace stack) => state = AsyncError(error, stack);
+
+  /// Reset back to initial idle state.
+  void reset() => state = const AsyncData(null);
 }

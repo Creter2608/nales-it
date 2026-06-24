@@ -2,24 +2,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
-import 'package:flutter_math_fork/flutter_math.dart';
 import 'package:markdown/markdown.dart' as markdown;
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:skeletonizer/skeletonizer.dart';
 import '../domain/quiz_models.dart';
 import 'quiz_state.dart';
 import 'result_screen.dart';
-
-class MathMarkdownBuilder extends MarkdownElementBuilder {
-  @override
-  Widget visitElementAfter(element, TextStyle? preferredStyle) {
-    if (element.textContent.isEmpty) return const SizedBox();
-    return Math.tex(
-      element.textContent,
-      textStyle: preferredStyle?.copyWith(fontSize: 18),
-      mathStyle: MathStyle.display,
-    );
-  }
-}
-
+import 'widgets/math_markdown_builder.dart';
+import 'widgets/mode_selection_sheet.dart';
+import 'widgets/question_grid_sheet.dart';
+import 'widgets/resolve_dialog.dart';
 
 class QuizScreen extends ConsumerStatefulWidget {
   final String quizId;
@@ -34,172 +26,16 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
   final PageController _pageController = PageController();
   bool _modeSelected = false;
 
-  void _showModeSelection(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text('Chọn Chế Độ Làm Bài', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              ListTile(
-                leading: const Icon(Icons.flash_on, color: Colors.blue),
-                title: const Text('Ôn luyện'),
-                subtitle: const Text('Báo màu xanh đỏ ngay khi chọn.'),
-                onTap: () {
-                  ref.read(quizStateProvider(widget.quizId).notifier).setMode(QuizMode.instantFeedback);
-                  setState(() => _modeSelected = true);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.timer, color: Colors.blue),
-                title: const Text('Thi thử'),
-                subtitle: const Text('Chấm điểm ở cuối giờ.'),
-                onTap: () {
-                  ref.read(quizStateProvider(widget.quizId).notifier).setMode(QuizMode.exam);
-                  setState(() => _modeSelected = true);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.smart_toy, color: Colors.blue),
-                title: const Text('Đánh giá AI'),
-                subtitle: const Text('AI nhận xét tổng quan kỹ năng của bạn.'),
-                onTap: () {
-                  ref.read(quizStateProvider(widget.quizId).notifier).setMode(QuizMode.aiEvaluation);
-                  setState(() => _modeSelected = true);
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.menu_book, color: Colors.blue),
-                title: const Text('Tự do'),
-                subtitle: const Text('Không chấm điểm, chỉ đọc câu hỏi.'),
-                onTap: () {
-                  ref.read(quizStateProvider(widget.quizId).notifier).setMode(QuizMode.practice);
-                  setState(() => _modeSelected = true);
-                  Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
-        );
-      }
-    );
-  }
-
-  void _showResolveDialog(BuildContext context, QuizNotifier notifier, String questionId) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Yêu cầu giải lại?'),
-        content: const Text('Bạn thấy cấn cấn? Yêu cầu Gia sư AI kiểm tra và giải lại câu này?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Hủy'),
-          ),
-          TextButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Đang yêu cầu AI giải lại...')),
-              );
-              try {
-                await notifier.resolveQuestion(questionId);
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Đã cập nhật lời giải mới!')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Lỗi: Không thể giải lại lúc này.')),
-                  );
-                }
-              }
-            },
-            child: const Text('Giải lại'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showGridNavigation(BuildContext context, Quiz quiz, QuizState state, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              const Text('Bảng câu hỏi', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 16),
-              Expanded(
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 5,
-                    crossAxisSpacing: 8,
-                    mainAxisSpacing: 8,
-                  ),
-                  itemCount: quiz.questions.length + (state.isStreaming ? 3 : 0),
-                  itemBuilder: (context, index) {
-                    if (index >= quiz.questions.length) {
-                      return Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
-                          border: Border.all(color: Colors.grey.shade400),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        alignment: Alignment.center,
-                        child: const SizedBox(
-                          width: 20, height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    
-                    final q = quiz.questions[index];
-                    final isAnswered = state.userAnswers.containsKey(q.id);
-                    return InkWell(
-                      onTap: () {
-                        Navigator.pop(context);
-                        ref.read(quizStateProvider(widget.quizId).notifier).jumpToQuestion(index);
-                        _pageController.jumpToPage(index);
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: isAnswered ? Colors.blue.shade100 : Colors.white,
-                          border: Border.all(color: Colors.blue),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        alignment: Alignment.center,
-                        child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, color: isAnswered ? Colors.blue.shade900 : Colors.black87)),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          ),
-        );
-      }
-    );
-  }
-
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _showModeSelection(context, ref);
+      showModeSelectionSheet(
+        context: context,
+        ref: ref,
+        quizId: widget.quizId,
+        onModeSelected: () => setState(() => _modeSelected = true),
+      );
     });
   }
 
@@ -223,16 +59,39 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
         if (quiz.questions.isEmpty) {
           if (quizState.isStreaming) {
             return Scaffold(
-              appBar: AppBar(title: Text(quiz.title), backgroundColor: Colors.blue, foregroundColor: Colors.white),
-              body: Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const CircularProgressIndicator(color: Colors.blue),
-                    const SizedBox(height: 16),
-                    Text(quizState.progressMessage ?? 'Đang tải...', style: const TextStyle(color: Colors.grey, fontSize: 16)),
-                  ],
-                ),
+              appBar: AppBar(title: Text(quiz.title)),
+              body: Column(
+                children: [
+                  LinearProgressIndicator(color: Colors.blue, backgroundColor: Colors.blue.shade100),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(quizState.progressMessage ?? 'Đang tải...', style: const TextStyle(fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: Skeletonizer(
+                      enabled: true,
+                      child: ListView(
+                        padding: const EdgeInsets.all(16),
+                        children: [
+                          const Text('Đang phân tích tài liệu để tạo câu hỏi trắc nghiệm...', style: TextStyle(fontSize: 20)),
+                          const SizedBox(height: 24),
+                          for (int i = 0; i < 4; i++)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: ElevatedButton(
+                                onPressed: null,
+                                child: Container(
+                                  width: double.infinity,
+                                  alignment: Alignment.centerLeft,
+                                  child: const Text('Loading answer placeholder...'),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             );
           }
@@ -247,7 +106,6 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
 
         final currentQ = quiz.questions[quizState.currentQuestionIndex];
         final userAnswerId = quizState.userAnswers[currentQ.id];
-        
         final isInstantMode = quizState.mode == QuizMode.instantFeedback;
         final showExplanation = isInstantMode && userAnswerId != null;
 
@@ -260,7 +118,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               IconButton(
                 icon: const Icon(Icons.grid_view),
                 tooltip: 'Bảng câu hỏi',
-                onPressed: () => _showGridNavigation(context, quiz, quizState, ref),
+                onPressed: () => showQuestionGridSheet(
+                  context: context,
+                  quiz: quiz,
+                  quizState: quizState,
+                  ref: ref,
+                  quizId: widget.quizId,
+                  pageController: _pageController,
+                ),
               ),
               TextButton(
                 onPressed: () {
@@ -288,7 +153,11 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                       tooltip: 'Báo cáo / Giải lại',
                       onPressed: () {
                         final notifier = ref.read(quizStateProvider(widget.quizId).notifier);
-                        _showResolveDialog(context, notifier, quiz.questions[quizState.currentQuestionIndex].id);
+                        showResolveDialog(
+                          context: context,
+                          notifier: notifier,
+                          questionId: quiz.questions[quizState.currentQuestionIndex].id,
+                        );
                       },
                     ),
                   ],
@@ -297,7 +166,10 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
               Expanded(
                 child: PageView.builder(
                   controller: _pageController,
-                  physics: const NeverScrollableScrollPhysics(),
+                  physics: const BouncingScrollPhysics(),
+                  onPageChanged: (index) {
+                    ref.read(quizStateProvider(widget.quizId).notifier).jumpToQuestion(index);
+                  },
                   itemCount: quiz.questions.length,
                   itemBuilder: (context, index) {
                     final q = quiz.questions[index];
@@ -361,7 +233,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                             }
                           }
 
-                          return Padding(
+                          Widget btn = Padding(
                             padding: const EdgeInsets.only(bottom: 12.0),
                             child: ElevatedButton(
                               style: ElevatedButton.styleFrom(
@@ -389,6 +261,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                               ),
                             ),
                           );
+
+                          if (isInstantMode && userAnswerId == ans.id && ans.id != q.correctAnswerId) {
+                            btn = btn.animate().shakeX(duration: 300.ms, amount: 3);
+                          } else if (userAnswerId == ans.id) {
+                            btn = btn.animate().scaleXY(end: 1.02, duration: 100.ms).then().scaleXY(end: 1.0, duration: 100.ms);
+                          }
+                          
+                          return btn;
                         }),
                         if (showExplanation && q.explanation != null) ...[
                           const SizedBox(height: 24),

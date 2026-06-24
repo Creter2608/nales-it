@@ -1,50 +1,25 @@
 import 'dart:async';
+import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../domain/quiz_models.dart';
 import '../data/quiz_repository.dart';
 
-class QuizState {
-  final AsyncValue<Quiz?> quiz;
-  final QuizMode mode;
-  final int currentQuestionIndex;
-  final Map<String, String> userAnswers; // questionId -> answerId
-  final bool isSubmitted;
-  final AsyncValue<Map<String, dynamic>?> gradeResult;
-  final bool isStreaming;
-  final String? progressMessage;
+import 'package:freezed_annotation/freezed_annotation.dart';
 
-  QuizState({
-    this.quiz = const AsyncLoading(),
-    this.mode = QuizMode.instantFeedback,
-    this.currentQuestionIndex = 0,
-    this.userAnswers = const {},
-    this.isSubmitted = false,
-    this.gradeResult = const AsyncData(null),
-    this.isStreaming = false,
-    this.progressMessage,
-  });
+part 'quiz_state.freezed.dart';
 
-  QuizState copyWith({
-    AsyncValue<Quiz?>? quiz,
-    QuizMode? mode,
-    int? currentQuestionIndex,
-    Map<String, String>? userAnswers,
-    bool? isSubmitted,
-    AsyncValue<Map<String, dynamic>?>? gradeResult,
-    bool? isStreaming,
+@freezed
+abstract class QuizState with _$QuizState {
+  const factory QuizState({
+    @Default(AsyncLoading()) AsyncValue<Quiz?> quiz,
+    @Default(QuizMode.instantFeedback) QuizMode mode,
+    @Default(0) int currentQuestionIndex,
+    @Default({}) Map<String, String> userAnswers,
+    @Default(false) bool isSubmitted,
+    @Default(AsyncData(null)) AsyncValue<Map<String, dynamic>?> gradeResult,
+    @Default(false) bool isStreaming,
     String? progressMessage,
-  }) {
-    return QuizState(
-      quiz: quiz ?? this.quiz,
-      mode: mode ?? this.mode,
-      currentQuestionIndex: currentQuestionIndex ?? this.currentQuestionIndex,
-      userAnswers: userAnswers ?? this.userAnswers,
-      isSubmitted: isSubmitted ?? this.isSubmitted,
-      gradeResult: gradeResult ?? this.gradeResult,
-      isStreaming: isStreaming ?? this.isStreaming,
-      progressMessage: progressMessage ?? this.progressMessage,
-    );
-  }
+  }) = _QuizState;
 }
 
 final quizStateProvider = StateNotifierProvider.family.autoDispose<QuizNotifier, QuizState, String>((ref, quizId) {
@@ -160,7 +135,8 @@ class QuizNotifier extends StateNotifier<QuizState> {
           ),
         );
       } else if (type == 'done') {
-        final finalQuizData = event['quiz_data'];
+        // quiz_data is available in event['quiz_data'] but not needed here
+        // since questions were built incrementally via chunk/images_mapped/answers_solved events.
         final finalTitle = event['title'] ?? currentQuiz.title;
         final finalId = event['quiz_id'] ?? currentQuiz.id;
         state = state.copyWith(
@@ -257,7 +233,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
       final updatedQuizData = await _repository.getQuiz(quizId);
       state = state.copyWith(quiz: AsyncData(updatedQuizData));
     } catch (e) {
-      print("Lỗi refresh quiz: $e");
+      developer.log("Error refreshing quiz: $e");
     }
   }
 

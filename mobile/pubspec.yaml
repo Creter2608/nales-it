@@ -42,6 +42,16 @@ dependencies:
   flutter_markdown: ^0.7.7+1
   flutter_math_fork: ^0.7.4
   markdown: ^7.3.1
+  flutter_localizations:
+    sdk: flutter
+  intl: any
+  freezed_annotation: any
+  json_annotation: ^4.9.0
+  hive: any
+  hive_flutter: any
+  sentry_flutter: any
+  flutter_animate: ^4.5.2
+  skeletonizer: ^2.1.3
 
 dev_dependencies:
   flutter_test:
@@ -53,14 +63,17 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
-  riverpod_generator: ^2.3.9
-  build_runner: ^2.4.7
+  riverpod_generator: any
+  build_runner: any
+  freezed: any
+  json_serializable: any
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

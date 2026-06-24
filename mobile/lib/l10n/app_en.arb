@@ -1,0 +1,21 @@
+{
+  "@@locale": "en",
+  "appTitle": "Nales-It AI Tutor",
+  "modeSelectionTitle": "Select Quiz Mode",
+  "modeInstant": "Practice",
+  "modeInstantDesc": "Immediate color feedback.",
+  "modeExam": "Exam",
+  "modeExamDesc": "Graded at the end.",
+  "modeAi": "AI Evaluation",
+  "modeAiDesc": "AI reviews your overall skills.",
+  "modePractice": "Free Mode",
+  "modePracticeDesc": "No grading, just reading.",
+  "questionGridTitle": "Question Grid",
+  "resolveDialogTitle": "Request Re-solve?",
+  "resolveDialogDesc": "Something feels off? Ask the AI Tutor to re-check and solve this again.",
+  "cancel": "Cancel",
+  "resolve": "Re-solve",
+  "resolvingMsg": "Requesting AI to re-solve...",
+  "resolvedMsg": "Solution updated!",
+  "resolveErrorMsg": "Error: Cannot re-solve right now."
+}
