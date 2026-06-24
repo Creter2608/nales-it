@@ -14,7 +14,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$QuizState {
 
- AsyncValue<Quiz?> get quiz; QuizMode get mode; int get currentQuestionIndex; Map<String, String> get userAnswers; bool get isSubmitted; AsyncValue<Map<String, dynamic>?> get gradeResult; bool get isStreaming; String? get progressMessage;
+ AsyncValue<Quiz?> get quiz; QuizMode get mode; int get currentQuestionIndex; Map<String, String> get userAnswers; bool get isSubmitted; AsyncValue<Map<String, dynamic>?> get gradeResult; bool get isStreaming; String? get progressMessage; Set<String> get viewingAnswers; Set<String> get loadingAnswers;
 /// Create a copy of QuizState
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -25,16 +25,16 @@ $QuizStateCopyWith<QuizState> get copyWith => _$QuizStateCopyWithImpl<QuizState>
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuizState&&(identical(other.quiz, quiz) || other.quiz == quiz)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&const DeepCollectionEquality().equals(other.userAnswers, userAnswers)&&(identical(other.isSubmitted, isSubmitted) || other.isSubmitted == isSubmitted)&&(identical(other.gradeResult, gradeResult) || other.gradeResult == gradeResult)&&(identical(other.isStreaming, isStreaming) || other.isStreaming == isStreaming)&&(identical(other.progressMessage, progressMessage) || other.progressMessage == progressMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is QuizState&&(identical(other.quiz, quiz) || other.quiz == quiz)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&const DeepCollectionEquality().equals(other.userAnswers, userAnswers)&&(identical(other.isSubmitted, isSubmitted) || other.isSubmitted == isSubmitted)&&(identical(other.gradeResult, gradeResult) || other.gradeResult == gradeResult)&&(identical(other.isStreaming, isStreaming) || other.isStreaming == isStreaming)&&(identical(other.progressMessage, progressMessage) || other.progressMessage == progressMessage)&&const DeepCollectionEquality().equals(other.viewingAnswers, viewingAnswers)&&const DeepCollectionEquality().equals(other.loadingAnswers, loadingAnswers));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,quiz,mode,currentQuestionIndex,const DeepCollectionEquality().hash(userAnswers),isSubmitted,gradeResult,isStreaming,progressMessage);
+int get hashCode => Object.hash(runtimeType,quiz,mode,currentQuestionIndex,const DeepCollectionEquality().hash(userAnswers),isSubmitted,gradeResult,isStreaming,progressMessage,const DeepCollectionEquality().hash(viewingAnswers),const DeepCollectionEquality().hash(loadingAnswers));
 
 @override
 String toString() {
-  return 'QuizState(quiz: $quiz, mode: $mode, currentQuestionIndex: $currentQuestionIndex, userAnswers: $userAnswers, isSubmitted: $isSubmitted, gradeResult: $gradeResult, isStreaming: $isStreaming, progressMessage: $progressMessage)';
+  return 'QuizState(quiz: $quiz, mode: $mode, currentQuestionIndex: $currentQuestionIndex, userAnswers: $userAnswers, isSubmitted: $isSubmitted, gradeResult: $gradeResult, isStreaming: $isStreaming, progressMessage: $progressMessage, viewingAnswers: $viewingAnswers, loadingAnswers: $loadingAnswers)';
 }
 
 
@@ -45,7 +45,7 @@ abstract mixin class $QuizStateCopyWith<$Res>  {
   factory $QuizStateCopyWith(QuizState value, $Res Function(QuizState) _then) = _$QuizStateCopyWithImpl;
 @useResult
 $Res call({
- AsyncValue<Quiz?> quiz, QuizMode mode, int currentQuestionIndex, Map<String, String> userAnswers, bool isSubmitted, AsyncValue<Map<String, dynamic>?> gradeResult, bool isStreaming, String? progressMessage
+ AsyncValue<Quiz?> quiz, QuizMode mode, int currentQuestionIndex, Map<String, String> userAnswers, bool isSubmitted, AsyncValue<Map<String, dynamic>?> gradeResult, bool isStreaming, String? progressMessage, Set<String> viewingAnswers, Set<String> loadingAnswers
 });
 
 
@@ -62,7 +62,7 @@ class _$QuizStateCopyWithImpl<$Res>
 
 /// Create a copy of QuizState
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? quiz = null,Object? mode = null,Object? currentQuestionIndex = null,Object? userAnswers = null,Object? isSubmitted = null,Object? gradeResult = null,Object? isStreaming = null,Object? progressMessage = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? quiz = null,Object? mode = null,Object? currentQuestionIndex = null,Object? userAnswers = null,Object? isSubmitted = null,Object? gradeResult = null,Object? isStreaming = null,Object? progressMessage = freezed,Object? viewingAnswers = null,Object? loadingAnswers = null,}) {
   return _then(_self.copyWith(
 quiz: null == quiz ? _self.quiz : quiz // ignore: cast_nullable_to_non_nullable
 as AsyncValue<Quiz?>,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
@@ -72,7 +72,9 @@ as Map<String, String>,isSubmitted: null == isSubmitted ? _self.isSubmitted : is
 as bool,gradeResult: null == gradeResult ? _self.gradeResult : gradeResult // ignore: cast_nullable_to_non_nullable
 as AsyncValue<Map<String, dynamic>?>,isStreaming: null == isStreaming ? _self.isStreaming : isStreaming // ignore: cast_nullable_to_non_nullable
 as bool,progressMessage: freezed == progressMessage ? _self.progressMessage : progressMessage // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,viewingAnswers: null == viewingAnswers ? _self.viewingAnswers : viewingAnswers // ignore: cast_nullable_to_non_nullable
+as Set<String>,loadingAnswers: null == loadingAnswers ? _self.loadingAnswers : loadingAnswers // ignore: cast_nullable_to_non_nullable
+as Set<String>,
   ));
 }
 
@@ -157,10 +159,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage,  Set<String> viewingAnswers,  Set<String> loadingAnswers)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _QuizState() when $default != null:
-return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage);case _:
+return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage,_that.viewingAnswers,_that.loadingAnswers);case _:
   return orElse();
 
 }
@@ -178,10 +180,10 @@ return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswe
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage,  Set<String> viewingAnswers,  Set<String> loadingAnswers)  $default,) {final _that = this;
 switch (_that) {
 case _QuizState():
-return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage);case _:
+return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage,_that.viewingAnswers,_that.loadingAnswers);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -198,10 +200,10 @@ return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswe
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( AsyncValue<Quiz?> quiz,  QuizMode mode,  int currentQuestionIndex,  Map<String, String> userAnswers,  bool isSubmitted,  AsyncValue<Map<String, dynamic>?> gradeResult,  bool isStreaming,  String? progressMessage,  Set<String> viewingAnswers,  Set<String> loadingAnswers)?  $default,) {final _that = this;
 switch (_that) {
 case _QuizState() when $default != null:
-return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage);case _:
+return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswers,_that.isSubmitted,_that.gradeResult,_that.isStreaming,_that.progressMessage,_that.viewingAnswers,_that.loadingAnswers);case _:
   return null;
 
 }
@@ -213,7 +215,7 @@ return $default(_that.quiz,_that.mode,_that.currentQuestionIndex,_that.userAnswe
 
 
 class _QuizState implements QuizState {
-  const _QuizState({this.quiz = const AsyncLoading(), this.mode = QuizMode.instantFeedback, this.currentQuestionIndex = 0, final  Map<String, String> userAnswers = const {}, this.isSubmitted = false, this.gradeResult = const AsyncData(null), this.isStreaming = false, this.progressMessage}): _userAnswers = userAnswers;
+  const _QuizState({this.quiz = const AsyncLoading(), this.mode = QuizMode.instantFeedback, this.currentQuestionIndex = 0, final  Map<String, String> userAnswers = const {}, this.isSubmitted = false, this.gradeResult = const AsyncData(null), this.isStreaming = false, this.progressMessage, final  Set<String> viewingAnswers = const {}, final  Set<String> loadingAnswers = const {}}): _userAnswers = userAnswers,_viewingAnswers = viewingAnswers,_loadingAnswers = loadingAnswers;
   
 
 @override@JsonKey() final  AsyncValue<Quiz?> quiz;
@@ -230,6 +232,20 @@ class _QuizState implements QuizState {
 @override@JsonKey() final  AsyncValue<Map<String, dynamic>?> gradeResult;
 @override@JsonKey() final  bool isStreaming;
 @override final  String? progressMessage;
+ final  Set<String> _viewingAnswers;
+@override@JsonKey() Set<String> get viewingAnswers {
+  if (_viewingAnswers is EqualUnmodifiableSetView) return _viewingAnswers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableSetView(_viewingAnswers);
+}
+
+ final  Set<String> _loadingAnswers;
+@override@JsonKey() Set<String> get loadingAnswers {
+  if (_loadingAnswers is EqualUnmodifiableSetView) return _loadingAnswers;
+  // ignore: implicit_dynamic_type
+  return EqualUnmodifiableSetView(_loadingAnswers);
+}
+
 
 /// Create a copy of QuizState
 /// with the given fields replaced by the non-null parameter values.
@@ -241,16 +257,16 @@ _$QuizStateCopyWith<_QuizState> get copyWith => __$QuizStateCopyWithImpl<_QuizSt
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuizState&&(identical(other.quiz, quiz) || other.quiz == quiz)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&const DeepCollectionEquality().equals(other._userAnswers, _userAnswers)&&(identical(other.isSubmitted, isSubmitted) || other.isSubmitted == isSubmitted)&&(identical(other.gradeResult, gradeResult) || other.gradeResult == gradeResult)&&(identical(other.isStreaming, isStreaming) || other.isStreaming == isStreaming)&&(identical(other.progressMessage, progressMessage) || other.progressMessage == progressMessage));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _QuizState&&(identical(other.quiz, quiz) || other.quiz == quiz)&&(identical(other.mode, mode) || other.mode == mode)&&(identical(other.currentQuestionIndex, currentQuestionIndex) || other.currentQuestionIndex == currentQuestionIndex)&&const DeepCollectionEquality().equals(other._userAnswers, _userAnswers)&&(identical(other.isSubmitted, isSubmitted) || other.isSubmitted == isSubmitted)&&(identical(other.gradeResult, gradeResult) || other.gradeResult == gradeResult)&&(identical(other.isStreaming, isStreaming) || other.isStreaming == isStreaming)&&(identical(other.progressMessage, progressMessage) || other.progressMessage == progressMessage)&&const DeepCollectionEquality().equals(other._viewingAnswers, _viewingAnswers)&&const DeepCollectionEquality().equals(other._loadingAnswers, _loadingAnswers));
 }
 
 
 @override
-int get hashCode => Object.hash(runtimeType,quiz,mode,currentQuestionIndex,const DeepCollectionEquality().hash(_userAnswers),isSubmitted,gradeResult,isStreaming,progressMessage);
+int get hashCode => Object.hash(runtimeType,quiz,mode,currentQuestionIndex,const DeepCollectionEquality().hash(_userAnswers),isSubmitted,gradeResult,isStreaming,progressMessage,const DeepCollectionEquality().hash(_viewingAnswers),const DeepCollectionEquality().hash(_loadingAnswers));
 
 @override
 String toString() {
-  return 'QuizState(quiz: $quiz, mode: $mode, currentQuestionIndex: $currentQuestionIndex, userAnswers: $userAnswers, isSubmitted: $isSubmitted, gradeResult: $gradeResult, isStreaming: $isStreaming, progressMessage: $progressMessage)';
+  return 'QuizState(quiz: $quiz, mode: $mode, currentQuestionIndex: $currentQuestionIndex, userAnswers: $userAnswers, isSubmitted: $isSubmitted, gradeResult: $gradeResult, isStreaming: $isStreaming, progressMessage: $progressMessage, viewingAnswers: $viewingAnswers, loadingAnswers: $loadingAnswers)';
 }
 
 
@@ -261,7 +277,7 @@ abstract mixin class _$QuizStateCopyWith<$Res> implements $QuizStateCopyWith<$Re
   factory _$QuizStateCopyWith(_QuizState value, $Res Function(_QuizState) _then) = __$QuizStateCopyWithImpl;
 @override @useResult
 $Res call({
- AsyncValue<Quiz?> quiz, QuizMode mode, int currentQuestionIndex, Map<String, String> userAnswers, bool isSubmitted, AsyncValue<Map<String, dynamic>?> gradeResult, bool isStreaming, String? progressMessage
+ AsyncValue<Quiz?> quiz, QuizMode mode, int currentQuestionIndex, Map<String, String> userAnswers, bool isSubmitted, AsyncValue<Map<String, dynamic>?> gradeResult, bool isStreaming, String? progressMessage, Set<String> viewingAnswers, Set<String> loadingAnswers
 });
 
 
@@ -278,7 +294,7 @@ class __$QuizStateCopyWithImpl<$Res>
 
 /// Create a copy of QuizState
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? quiz = null,Object? mode = null,Object? currentQuestionIndex = null,Object? userAnswers = null,Object? isSubmitted = null,Object? gradeResult = null,Object? isStreaming = null,Object? progressMessage = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? quiz = null,Object? mode = null,Object? currentQuestionIndex = null,Object? userAnswers = null,Object? isSubmitted = null,Object? gradeResult = null,Object? isStreaming = null,Object? progressMessage = freezed,Object? viewingAnswers = null,Object? loadingAnswers = null,}) {
   return _then(_QuizState(
 quiz: null == quiz ? _self.quiz : quiz // ignore: cast_nullable_to_non_nullable
 as AsyncValue<Quiz?>,mode: null == mode ? _self.mode : mode // ignore: cast_nullable_to_non_nullable
@@ -288,7 +304,9 @@ as Map<String, String>,isSubmitted: null == isSubmitted ? _self.isSubmitted : is
 as bool,gradeResult: null == gradeResult ? _self.gradeResult : gradeResult // ignore: cast_nullable_to_non_nullable
 as AsyncValue<Map<String, dynamic>?>,isStreaming: null == isStreaming ? _self.isStreaming : isStreaming // ignore: cast_nullable_to_non_nullable
 as bool,progressMessage: freezed == progressMessage ? _self.progressMessage : progressMessage // ignore: cast_nullable_to_non_nullable
-as String?,
+as String?,viewingAnswers: null == viewingAnswers ? _self._viewingAnswers : viewingAnswers // ignore: cast_nullable_to_non_nullable
+as Set<String>,loadingAnswers: null == loadingAnswers ? _self._loadingAnswers : loadingAnswers // ignore: cast_nullable_to_non_nullable
+as Set<String>,
   ));
 }
 

@@ -59,10 +59,14 @@ def _normalize_questions(chunk_data: dict, image_mapping: dict,
     """
     chunk_questions = []
 
-    if chunk_data.get("answer_keys"):
+    if isinstance(chunk_data, dict) and chunk_data.get("answer_keys"):
         prescan_keys.update(chunk_data["answer_keys"])
 
-    for q in chunk_data.get("questions", []):
+    questions_list = chunk_data if isinstance(chunk_data, list) else chunk_data.get("questions", [])
+
+    for q in questions_list:
+        if not isinstance(q, dict):
+            continue
         if not q.get("content"):
             continue
         valid_answers = [a for a in q.get("answers", []) if a.get("id") and a.get("content")]
@@ -128,7 +132,9 @@ Document text:
     )
 
     chain = prompt | llm.bind(response_format={"type": "json_schema", "json_schema": QUIZ_EXTRACTION_SCHEMA})
-    sem = asyncio.Semaphore(3)
+    
+    # Change concurrency to 1 because LM Studio usually hangs on concurrent requests
+    sem = asyncio.Semaphore(1)
 
     async def process_text_chunk(chunk_idx, text):
         async with sem:
@@ -222,8 +228,11 @@ IMPORTANT NOTES:
 - VERY IMPORTANT: Do NOT write long reasoning blocks. Output ONLY the JSON array.
 """
 
+        # Change concurrency to 1 because LM Studio hangs
+        vision_sem = asyncio.Semaphore(1)
+
         async def process_image_chunk(chunk_idx, images):
-            async with sem:
+            async with vision_sem:
                 try:
                     message_content = [{"type": "text", "text": instruction}]
                     for img_b64 in images:

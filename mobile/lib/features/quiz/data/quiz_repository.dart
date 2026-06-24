@@ -30,12 +30,13 @@ class QuizRepository {
     }
   }
 
-  Future<Map<String, dynamic>> resolveQuestion(String quizId, String questionId) async {
+  Future<Map<String, dynamic>> resolveQuestion(String quizId, String questionId, {bool force = false}) async {
     final response = await _dio.post(
       '/api/v1/quiz/resolve',
       data: {
         'quiz_id': quizId,
         'question_id': questionId,
+        'force': force,
       },
     );
     return response.data;

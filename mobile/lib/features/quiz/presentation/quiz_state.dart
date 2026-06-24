@@ -19,25 +19,30 @@ abstract class QuizState with _$QuizState {
     @Default(AsyncData(null)) AsyncValue<Map<String, dynamic>?> gradeResult,
     @Default(false) bool isStreaming,
     String? progressMessage,
+    @Default({}) Set<String> viewingAnswers,
+    @Default({}) Set<String> loadingAnswers,
   }) = _QuizState;
 }
 
 final quizStateProvider = StateNotifierProvider.family.autoDispose<QuizNotifier, QuizState, String>((ref, quizId) {
-  return QuizNotifier(ref.watch(quizRepositoryProvider), quizId);
+  final keepAliveLink = ref.keepAlive();
+  return QuizNotifier(ref.watch(quizRepositoryProvider), quizId, keepAliveLink);
 });
 
 class QuizNotifier extends StateNotifier<QuizState> {
   final QuizRepository _repository;
   final String quizId;
+  final KeepAliveLink _keepAliveLink;
   StreamSubscription<Map<String, dynamic>>? _streamSubscription;
 
   @override
   void dispose() {
     _streamSubscription?.cancel();
+    _keepAliveLink.close();
     super.dispose();
   }
 
-  QuizNotifier(this._repository, this.quizId) : super(QuizState()) {
+  QuizNotifier(this._repository, this.quizId, this._keepAliveLink) : super(const QuizState()) {
     if (quizId != "streaming") {
       _loadQuiz();
     }
@@ -49,6 +54,9 @@ class QuizNotifier extends StateNotifier<QuizState> {
       state = state.copyWith(quiz: AsyncData(quiz));
     } catch (e, stack) {
       state = state.copyWith(quiz: AsyncError(e, stack));
+    } finally {
+      // Allow disposal after load completes
+      _keepAliveLink.close();
     }
   }
 
@@ -56,7 +64,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
     state = state.copyWith(
       isStreaming: true,
       progressMessage: "Đang phân tích định dạng văn bản...",
-      quiz: AsyncData(Quiz(title: "Đang xử lý PDF...", questions: [])),
+      quiz: const AsyncData(Quiz(title: "Đang xử lý PDF...", questions: [])),
     );
 
     _streamSubscription?.cancel();
@@ -135,20 +143,29 @@ class QuizNotifier extends StateNotifier<QuizState> {
           ),
         );
       } else if (type == 'done') {
-        // quiz_data is available in event['quiz_data'] but not needed here
-        // since questions were built incrementally via chunk/images_mapped/answers_solved events.
-        final finalTitle = event['title'] ?? currentQuiz.title;
-        final finalId = event['quiz_id'] ?? currentQuiz.id;
-        state = state.copyWith(
-          isStreaming: false,
-          quiz: AsyncData(
-            Quiz(
-              id: finalId,
-              title: finalTitle,
-              questions: currentQuiz.questions, // Keep the built list, since we updated incrementally!
-            ),
-          ),
-        );
+        final quizId = event['quiz_id'];
+        final title = event['title'];
+        
+        if (state.quiz is AsyncData && state.quiz.value != null) {
+          final currentQuiz = state.quiz.value!;
+          state = state.copyWith(
+            isStreaming: false,
+            quiz: AsyncData(currentQuiz.copyWith(
+              id: quizId,
+              title: title,
+            ))
+          );
+        } else {
+          state = state.copyWith(
+            isStreaming: false,
+            quiz: AsyncData(Quiz(
+              id: quizId,
+              title: title ?? "Không tìm thấy câu hỏi",
+              questions: [],
+            ))
+          );
+        }
+        _keepAliveLink.close();
       } else if (type == 'error') {
         state = state.copyWith(
           isStreaming: false,
@@ -162,7 +179,14 @@ class QuizNotifier extends StateNotifier<QuizState> {
       );
     }, onDone: () {
       if (state.isStreaming) {
-        state = state.copyWith(isStreaming: false);
+        if (state.quiz is! AsyncData) {
+          state = state.copyWith(
+            isStreaming: false,
+            quiz: const AsyncData(Quiz(id: 'error', title: 'Lỗi', questions: []))
+          );
+        } else {
+          state = state.copyWith(isStreaming: false);
+        }
       }
     });
   }
@@ -187,7 +211,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
         // Lazy Loading: Kéo đáp án mới từ server nếu câu hiện tại chưa có đáp án
         final nextQ = state.quiz.value!.questions[state.currentQuestionIndex];
         if (nextQ.correctAnswerId == null) {
-          refreshQuiz();
+          resolveQuestion(nextQ.id, force: false);
         }
       }
     }
@@ -206,7 +230,7 @@ class QuizNotifier extends StateNotifier<QuizState> {
         
         final targetQ = state.quiz.value!.questions[index];
         if (targetQ.correctAnswerId == null) {
-          refreshQuiz();
+          resolveQuestion(targetQ.id, force: false);
         }
       }
     }
@@ -237,14 +261,37 @@ class QuizNotifier extends StateNotifier<QuizState> {
     }
   }
 
-  Future<void> resolveQuestion(String questionId) async {
+  void demandAnswer(String questionId) {
+    // Add to viewing Answers
+    final newViewing = Set<String>.from(state.viewingAnswers)..add(questionId);
+    state = state.copyWith(viewingAnswers: newViewing);
+    
+    // Check if it needs resolving
+    if (state.quiz.value != null) {
+      final targetQ = state.quiz.value!.questions.firstWhere((q) => q.id == questionId);
+      if (targetQ.correctAnswerId == null && !state.loadingAnswers.contains(questionId)) {
+        resolveQuestion(questionId, force: false);
+      }
+    }
+  }
+
+  Future<void> resolveQuestion(String questionId, {bool force = true}) async {
+    // Mark as loading
+    final newLoading = Set<String>.from(state.loadingAnswers)..add(questionId);
+    state = state.copyWith(loadingAnswers: newLoading);
+
     try {
-      final result = await _repository.resolveQuestion(quizId, questionId);
+      final result = await _repository.resolveQuestion(quizId, questionId, force: force);
       if (result['status'] == 'success') {
+        // Force refresh local data
         await refreshQuiz();
       }
     } catch (e) {
-      throw Exception('Không thể giải lại lúc này: $e');
+      developer.log('Error resolving question: $e');
+    } finally {
+      // Remove from loading
+      final endLoading = Set<String>.from(state.loadingAnswers)..remove(questionId);
+      state = state.copyWith(loadingAnswers: endLoading);
     }
   }
 }

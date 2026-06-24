@@ -4,6 +4,7 @@ from pathlib import Path
 from langchain_openai import ChatOpenAI
 from langchain_core.messages import SystemMessage, HumanMessage
 from app.core.config import settings
+from app.services.llm_utils import get_llm
 
 logger = logging.getLogger(__name__)
 
@@ -17,15 +18,7 @@ class FabricAgent:
         # Add instruction to reply in Vietnamese but keep English code intact
         self.system_prompt += "\n\nCRITICAL INSTRUCTION: Please ensure your final output explanations are translated to Vietnamese, but keep code, commands, and technical terms in English."
         
-        self.llm = ChatOpenAI(
-            base_url=settings.LM_STUDIO_API_BASE,
-            api_key=settings.LM_STUDIO_API_KEY,
-            model=self.model,
-            temperature=self.temperature,
-            max_retries=3,
-            timeout=120,
-            max_tokens=4096,
-        )
+        self.llm = get_llm(temperature=self.temperature)
 
     def _load_pattern(self, pattern_name: str) -> str:
         pattern_file = Path(settings.FABRIC_PATTERNS_DIR) / pattern_name / "system.md"

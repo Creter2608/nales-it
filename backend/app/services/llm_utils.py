@@ -3,22 +3,34 @@
 import json
 import re
 import logging
+from typing import Any
 from langchain_openai import ChatOpenAI
+from langchain_google_genai import ChatGoogleGenerativeAI
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
 
-def get_llm(temperature: float = 0.1) -> ChatOpenAI:
-    """Create a ChatOpenAI instance configured for LM Studio or compatible API."""
+def get_llm(temperature: float = 0.1) -> Any:
+    """Create an LLM instance based on configuration."""
+    if settings.GEMINI_API_KEY and not settings.LM_STUDIO_API_BASE:
+        return ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            google_api_key=settings.GEMINI_API_KEY,
+            temperature=temperature,
+            max_retries=6,
+            timeout=600,
+        )
+        
     return ChatOpenAI(
         base_url=settings.LM_STUDIO_API_BASE,
-        api_key=settings.LM_STUDIO_API_KEY,
-        model=settings.LM_STUDIO_MODEL,
+        api_key=settings.LM_STUDIO_API_KEY or "lm-studio",
+        model=settings.LM_STUDIO_MODEL or "local-model",
         temperature=temperature,
         max_retries=6,
         timeout=600,
         max_tokens=8192,
+        default_headers={"Connection": "close"}
     )
 
 

@@ -12,7 +12,10 @@
 - **UI/UX**: Material 3, flutter_animate (micro-animations), skeletonizer (loading states), BouncingScrollPhysics (swiping).
 
 ## Completed Tasks
-- **Phase 1**: Khảo sát & sửa lỗi cú pháp (cập nhật Riverpod `autoDispose`, sửa lỗi SSE stream listener trong `quiz_state.dart`).
+- **Phase 1**: Sửa lỗi "kẹt Loading vĩnh viễn" khi kết nối SSE trên Web.
+  - Sửa lỗi vỡ UTF-8 chunking trong `upload_repository.dart` gây `FormatException`.
+  - Fix lỗi Riverpod `autoDispose` race condition làm ngắt kết nối stream sớm.
+  - Loại bỏ `Dio` trên Web và dùng `fetch_client` để đảm bảo stream được từng phần tử (progressive streaming) bỏ qua buffering của trình duyệt.
 - **Phase 2**: Chia tách UI Widget lớn thành các file nhỏ (`mode_selection_sheet.dart`, `question_grid_sheet.dart`, `resolve_dialog.dart`, `math_markdown_builder.dart`).
 - **Phase 3**: Nâng cấp hạ tầng: 
   - Chuyển Data models sang `@freezed`.

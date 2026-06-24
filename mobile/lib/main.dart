@@ -10,20 +10,21 @@ import 'core/theme/app_theme.dart';
 import 'core/theme/theme_provider.dart';
 
 Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
-  await CacheService.init();
-  
   await SentryFlutter.init(
     (options) {
       options.dsn = 'https://example@sentry.io/123456'; // Placeholder DSN
       options.tracesSampleRate = 1.0;
     },
-    appRunner: () => runApp(
-      const ProviderScope(
-        child: MyApp(),
-      ),
-    ),
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
+      await Hive.initFlutter();
+      await CacheService.init();
+      runApp(
+        const ProviderScope(
+          child: MyApp(),
+        ),
+      );
+    },
   );
 }
 

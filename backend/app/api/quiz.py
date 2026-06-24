@@ -102,6 +102,7 @@ async def grade_quiz(request: GradeRequest):
 class ResolveRequest(BaseModel):
     quiz_id: str
     question_id: str
+    force: bool = False
 
 @quiz_router.post("/resolve")
 async def resolve_question(request: ResolveRequest):
@@ -121,6 +122,10 @@ async def resolve_question(request: ResolveRequest):
             
     if not target_q:
         raise HTTPException(status_code=404, detail="Question not found.")
+        
+    # If not forcing and it's already solved, just return it
+    if not request.force and target_q.get("correct_answer_id"):
+        return {"status": "success", "new_answer": target_q["correct_answer_id"], "new_explanation": target_q.get("explanation", "")}
         
     from app.services.quiz_generator import resolve_single_question
     

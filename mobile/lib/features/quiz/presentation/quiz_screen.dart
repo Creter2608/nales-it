@@ -104,10 +104,7 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
           return ResultScreen(quizId: widget.quizId);
         }
 
-        final currentQ = quiz.questions[quizState.currentQuestionIndex];
-        final userAnswerId = quizState.userAnswers[currentQ.id];
         final isInstantMode = quizState.mode == QuizMode.instantFeedback;
-        final showExplanation = isInstantMode && userAnswerId != null;
 
         return Scaffold(
           appBar: AppBar(
@@ -173,6 +170,9 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                   itemCount: quiz.questions.length,
                   itemBuilder: (context, index) {
                     final q = quiz.questions[index];
+                    final qUserAnswerId = quizState.userAnswers[q.id];
+                    final isViewingAnswer = quizState.viewingAnswers.contains(q.id);
+                    
                     return ListView(
                       padding: const EdgeInsets.all(16),
                       children: [
@@ -221,14 +221,14 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                         const SizedBox(height: 24),
                         ...q.answers.map((ans) {
                           Color? btnColor;
-                          if (isInstantMode && userAnswerId != null) {
+                          if (isInstantMode && qUserAnswerId != null && isViewingAnswer) {
                             if (ans.id == q.correctAnswerId) {
                               btnColor = Colors.green;
-                            } else if (ans.id == userAnswerId) {
+                            } else if (ans.id == qUserAnswerId) {
                               btnColor = Colors.red;
                             }
                           } else {
-                            if (userAnswerId == ans.id) {
+                            if (qUserAnswerId == ans.id) {
                               btnColor = Colors.blue.shade200;
                             }
                           }
@@ -262,34 +262,59 @@ class _QuizScreenState extends ConsumerState<QuizScreen> {
                             ),
                           );
 
-                          if (isInstantMode && userAnswerId == ans.id && ans.id != q.correctAnswerId) {
+                          if (isInstantMode && qUserAnswerId == ans.id && isViewingAnswer && ans.id != q.correctAnswerId) {
                             btn = btn.animate().shakeX(duration: 300.ms, amount: 3);
-                          } else if (userAnswerId == ans.id) {
+                          } else if (qUserAnswerId == ans.id) {
                             btn = btn.animate().scaleXY(end: 1.02, duration: 100.ms).then().scaleXY(end: 1.0, duration: 100.ms);
                           }
                           
                           return btn;
                         }),
-                        if (showExplanation && q.explanation != null) ...[
-                          const SizedBox(height: 24),
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(12)),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('💡 Giải thích từ AI:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
-                                const SizedBox(height: 8),
-                                MarkdownBody(
-                                  data: q.explanation!,
-                                  builders: {'math': MathMarkdownBuilder()},
-                                  extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                        if (isInstantMode && qUserAnswerId != null) ...[
+                          const SizedBox(height: 16),
+                          if (!isViewingAnswer)
+                            Center(
+                              child: ElevatedButton.icon(
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                                onPressed: () {
+                                  ref.read(quizStateProvider(widget.quizId).notifier).demandAnswer(q.id);
+                                },
+                                icon: const Icon(Icons.visibility),
+                                label: const Text('Xem đáp án chi tiết'),
+                              ),
+                            )
+                          else if (quizState.loadingAnswers.contains(q.id))
+                            const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Column(
+                                  children: [
+                                    CircularProgressIndicator(),
+                                    SizedBox(height: 8),
+                                    Text('AI đang giải đáp án...', style: TextStyle(color: Colors.grey)),
+                                  ],
                                 ),
-                                const SizedBox(height: 12),
-                                const Text('🤖 Lời giải này được sinh ra bởi AI nên có thể không chính xác 100%. Vui lòng tham khảo thêm tài liệu chính thống.', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
-                              ],
-                            ),
-                          )
+                              ),
+                            )
+                          else if (q.explanation != null)
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(color: Colors.amber.shade50, borderRadius: BorderRadius.circular(12)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('💡 Giải thích từ AI:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.orange)),
+                                  const SizedBox(height: 8),
+                                  MarkdownBody(
+                                    data: q.explanation!,
+                                    builders: {'math': MathMarkdownBuilder()},
+                                    extensionSet: markdown.ExtensionSet.gitHubFlavored,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text('🤖 Lời giải này được sinh ra bởi AI nên có thể không chính xác 100%. Vui lòng tham khảo thêm tài liệu chính thống.', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+                                ],
+                              ),
+                            )
                         ]
                       ],
                     );

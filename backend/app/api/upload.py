@@ -1,18 +1,14 @@
 import logging
 import asyncio
-import random
-import string
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Depends, Request
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks
 from app.services.pdf_extractor import extract_text_from_pdf
-from app.services.quiz_generator import solve_quiz_questions
-from app.core.auth import verify_api_key
-from app.core.rate_limit import rate_limit
+from app.services.quiz_solver import solve_quiz_questions
 from fastapi.responses import StreamingResponse
 import json
 import os
 
 logger = logging.getLogger(__name__)
-upload_router = APIRouter(prefix="/upload", tags=["upload"], dependencies=[Depends(verify_api_key)])
+upload_router = APIRouter(prefix="/upload", tags=["upload"])
 router = upload_router
 
 async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
@@ -29,8 +25,8 @@ async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
     from app.db.mock import get_mock_quiz, set_mock_quiz
     db = get_database()
     
-    for chunk_start in range(0, len(remaining_unsolved), chunk_size):
-        chunk = remaining_unsolved[chunk_start:chunk_start + chunk_size]
+    for i in range(0, len(remaining_unsolved), chunk_size):
+        chunk = remaining_unsolved[i:i + chunk_size]
         try:
             solved_results = await solve_quiz_questions(chunk)
             
@@ -42,10 +38,10 @@ async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
                 if quiz_data:
                     solved_map = {str(item["id"]): item for item in solved_results}
                     set_updates = {}
-                    for q_idx, q in enumerate(quiz_data["questions"]):
+                    for i, q in enumerate(quiz_data["questions"]):
                         if str(q["id"]) in solved_map:
                             solved_q = solved_map[str(q["id"])]
-                            prefix = f"questions.{q_idx}."
+                            prefix = f"questions.{i}."
                             set_updates[prefix + "content"] = solved_q.get("content", q.get("content", ""))
                             set_updates[prefix + "answers"] = solved_q.get("answers", q.get("answers", []))
                             set_updates[prefix + "correct_answer_id"] = solved_q.get("correct_answer_id", None)
@@ -65,7 +61,7 @@ async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
                             q["explanation"] = solved_map[sid].get("explanation")
                     set_mock_quiz(quiz_id, quiz_data)
                     
-            logger.info(f"[Background Task] Finished solving chunk {chunk_start//chunk_size + 1}. Saved to DB.")
+            logger.info(f"[Background Task] Finished solving chunk {i//chunk_size + 1}. Saved to DB.")
             await asyncio.sleep(2) # Sleep for 2 seconds to avoid Rate Limit
             
         except Exception as e:
@@ -75,7 +71,7 @@ async def background_solve_chunking(quiz_id: str, remaining_unsolved: list):
 
 
 @router.post("/pdf")
-async def upload_pdf(request: Request, background_tasks: BackgroundTasks, file: UploadFile = File(...), _rate_limit: bool = Depends(rate_limit(requests=5, window=60))):
+async def upload_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
     if not file.filename.lower().endswith('.pdf') and file.content_type != 'application/pdf':
         raise HTTPException(status_code=400, detail="Invalid file type. Only PDF files are allowed.")
         
@@ -91,7 +87,7 @@ async def upload_pdf(request: Request, background_tasks: BackgroundTasks, file: 
             chunks, image_mapping = await extract_text_from_pdf(file)
             
             logger.info(f"Started SSE stream from {len(chunks)} chunk(s)...")
-            from app.services.quiz_generator import stream_quiz_from_pdf
+            from app.services.quiz_extractor import stream_quiz_from_pdf
             
             queue = asyncio.Queue()
             
@@ -121,7 +117,7 @@ async def upload_pdf(request: Request, background_tasks: BackgroundTasks, file: 
                         continue
 
                     if event["type"] == "done":
-                        # Save to Database
+                        logger.info("YIELDING EVENT: done")
                         quiz_data = event.pop("quiz_data")
                         remaining_unsolved = event.pop("unsolved")
                         
@@ -145,6 +141,7 @@ async def upload_pdf(request: Request, background_tasks: BackgroundTasks, file: 
                             
                         yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
                     else:
+                        logger.info(f"YIELDING EVENT: {event.get('type')}")
                         yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
             except asyncio.CancelledError:
                 logger.warning("Client disconnected from SSE stream! Cancelling background LLM generation...")
